@@ -3,29 +3,36 @@ import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 import os
+# from le_dado import reamostra_dado
 
 
 
 def filtra_dados(nivel_mar, tempo, nome_serie, fig_folder, metodo, modelo = False):
-  fig_folder = fig_folder + 'filtro/'
-  check_path(fig_folder)
+  fig_folder = check_fig_path(fig_folder)
   if metodo ==  'band':
     b, a = passa_banda(fig_folder, modelo)
   elif metodo == 'low':
     b, a = passa_baixa(fig_folder, modelo)
   elif metodo == 'high':
     b, a = passa_alta(fig_folder)
-  elif metodo == 'composto':
-    nivel_mar_low = filtra_dados(nivel_mar, tempo, nome_serie, fig_folder, 'low')
-    return filtra_dados(nivel_mar_low, tempo, nome_serie, fig_folder, 'high')
+  # elif metodo == 'composto':
+  #   nivel_mar_low = filtra_dados(nivel_mar, tempo, nome_serie, fig_folder, 'low', modelo)
+  #   nivel_mar_low_daily = reamostra_dado(nivel_mar_low, nivel_mar_low.time)
+  #   return filtra_dados(nivel_mar_low_daily.data, nivel_mar_low_daily['time'],
+  #                       nome_serie, fig_folder, 'high', modelo)
 
   nivel_mar_filtrado = aplica_filtro(b,a, nivel_mar, tempo, nome_serie, fig_folder)
 
   return nivel_mar_filtrado
 
-def check_path(fig_folder):
+def check_fig_path(fig_folder):
+  if fig_folder[-7:] == 'filtro/':
+    fig_folder = fig_folder[:-7]
+  else:
+    fig_folder = fig_folder + 'filtro/'
   if not os.path.exists(fig_folder):
     os.makedirs(fig_folder)
+  return fig_folder
 
 def passa_baixa(fig_folder, modelo):
   # vai ser aplicado em dois passos pra mim: primeior passa baixa c freq horaria
