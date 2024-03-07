@@ -53,8 +53,10 @@ def corta_dado(dataini, datafim, dado):
 
     return(dado_cortado, datas_cortadas)
 
-def reamostra_dado(dado, dado_tempo):
+def reamostra_dado_old(dado, dado_tempo):
     '''
+        VELHO!
+        Afonso recomendou pegar o valor singular, ao invés de interpolar cubicamente
         Pega um array numpy de dado e outro de tempo e reamostra para 1 dia.
         dado: (numpy array) array com dados (de ssh)
         dado_tempo: (numpy array) array de datas
@@ -69,6 +71,25 @@ def reamostra_dado(dado, dado_tempo):
     '''
     da_diario = da.resample(time='1D').interpolate('cubic')
     return da_diario
+
+def reamostra_dado(dado, dado_tempo):
+    '''
+        Reamostra o dado pegando o valor das 00
+        diferente do anterior que fazia uma interpolacao cubica pra
+        gerar um resultado diario
+
+    Args:
+        dado (numpy array): Serie temporal de asm
+        dado_tempo (Data Array): Serie de tempo
+
+    Returns:
+        numpy array: Serie temporal reamostrada com os horarios das 00
+    '''
+
+    tempo = dado_tempo.values
+    datas = pd.date_range(tempo[0], tempo[-1], freq = 'h')
+    df_dates = pd.DataFrame({'data':dado}, index = datas)
+    return np.asarray(df_dates[df_dates.index.hour==00]['data'])
 
 def pega_fft(ssh, nome_serie, fig_folder):
     N = 365*24 # numero de medicoes
@@ -116,7 +137,7 @@ def pega_fft_diario(ssh, nome_serie, fig_folder):
     plt.grid()
     plt.savefig(f'{fig_folder}{nome_serie}_frequencias.png')
 
-def roda_analise(filename, path_dado, formato, nome, metodo, fig_folder,
+def roda_analise(filename, path_dado, formato, nome, fig_folder,
                  dataini = None, datafim = None):
     formatos = ['csv', 'nc']
     while formato not in formatos:
@@ -137,9 +158,13 @@ def roda_analise(filename, path_dado, formato, nome, metodo, fig_folder,
 
     dado_ssh, dado_tempo = corta_dado(dataini, datafim, dado)
 
-    dado_filtrado = filtra_dados(dado_ssh, dado_tempo, nome, fig_folder, metodo)
+    # metodo = 'composto' # gambiarra feita no desespero
+    # if metodo == 'composto':
+    #     dado_filtrado = filtra_dados(dado_ssh, dado_tempo, nome, fig_folder, 'low')
+    #     filtro_reamostrado = reamostra_dado(dado_filtrado, dado_tempo)
+    #     dado_filtrado2 = filtra_dados(filtro_reamostrado.data, filtro_reamostrado['time'],
+    #                                   nome, fig_folder, 'high')
 
-    dado_reamostrado = reamostra_dado(dado_filtrado, dado_tempo)
 
-    return dado_reamostrado
+    return dado_ssh, dado_tempo
 
