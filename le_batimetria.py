@@ -2,6 +2,7 @@
 base = https://notebook.community/ueapy/ueapy.github.io/content/notebooks/2019-05-30-cartopy-map
 '''
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import pandas as pd
 import numpy as np
 import xarray as xr
@@ -10,6 +11,7 @@ import cartopy
 import cartopy.crs as ccrs
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 import cartopy.feature as cfeature
+import matplotlib.ticker as mticker
 
 
 
@@ -26,7 +28,7 @@ plt.rc("legend", fontsize=SMALL_SIZE)
 # Open prepared bathymetry dataset using pathlib to sepcify the relative path
 
 
-bathy_file_path = Path('/Users/breno/dados_mestrado/batimetria/gebco_bat.nc')
+bathy_file_path = Path('/Volumes/BRENO_HD/dados_mestrado/batimetria/gebco_bat.nc')
 bathy_ds_raw = xr.open_dataset(bathy_file_path)
 bathy_ds = bathy_ds_raw.where((bathy_ds_raw.lat < 5.5) & 
                               (bathy_ds_raw.lon > -58) &
@@ -115,7 +117,7 @@ for i in pontos_goo:
 
 for j in pontos_sim:
     plt.plot(pontos_sim[j][1], pontos_sim[j][0],
-            color='green', linewidth=2, marker='o',
+            color='yellow', linewidth=2, marker='o',
             transform=ccrs.PlateCarree()
             )  
     # plt.text(pontos_sim[j][1] - 0.05, pontos_sim[j][0] - 0.05, j,
@@ -124,11 +126,24 @@ for j in pontos_sim:
 
 legend_elements = [
     Line2D([0],[0], color = 'red', marker='P', label='GOOS', markerfacecolor='red', markersize=15, linestyle = ''),
-    Line2D([0],[0], color = 'green', marker='o', label='SiMCosta', markerfacecolor='green',
+    Line2D([0],[0], color = 'yellow', marker='o', label='SiMCosta', markerfacecolor='yellow',
             markersize=15,  linestyle = '')
 ]
 
 ax.legend(handles = legend_elements, loc='lower right')
+
+lons = np.arange(bathy_lon.min().round(0), bathy_lon.max().round(0), 5)
+lats = np.arange(bathy_lat.min().round(0), bathy_lat.max().round(0), 5)
+gl = ax.gridlines(crs=ccrs.PlateCarree(), linewidth=.5, color='black', alpha=0.5, linestyle='--', draw_labels=True)
+gl.xlabels_top = False
+gl.ylabels_left = False
+gl.ylabels_right=True
+gl.xlines = True
+gl.xlocator = mticker.FixedLocator(lons)
+gl.ylocator = mticker.FixedLocator(lats)
+gl.xformatter = LONGITUDE_FORMATTER
+gl.yformatter = LATITUDE_FORMATTER
+
 
 
 plt.tight_layout()
