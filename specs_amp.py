@@ -262,19 +262,164 @@ def spec_sum(da, **kw):
     xxx = da.values
     ppp = len(xxx)  # Comprimento da janela de filtro no domínio do tempo
                     # (por enquanto vamos usar o comprimento da série)
-    dt = (da.index.to_series().
+    dt = (da.time.to_series(). # tava index no lugar de time
           diff().astype('timedelta64[m]').
           fillna(0).astype('int')/60)[1] # Intervalo amostral (inferindo do Dataframe df)
+    
+    # abaixo eh quando eu jogo o array ao inves do dataframe
 
-    ci = 95 # Intervalo de confiança (a verificar)
+    # xxx= da
+    # dt = 1
+    # ppp = 365
+
+    # ci = 95 # Intervalo de confiança (a verificar)
 
     fff, hepya, conflim = specs(xxx, ppp, dt, win, smo, ci)
     return fff, hepya, conflim
 
+def plot():
+    # da=dfobs['u'][~np.isnan(dfobs['u'])] -> IMPORTA DADO
+            # da=dfobs['u'].interpolate('linear')
+    # fffo, hepyao, conflim = spa.spec_sum(da,smo=999,win=1) # CALCULA ESPECTRO
+    fffo, hepyao, conflim = spec_sum(data/100,smo=999,win=1)
+    fffo, hepyao = fffo[1:], hepyao[1:]
+    chio = conflim[0]; chio=chio[1:]
+    cloo = conflim[1]; cloo=cloo[1:]
+    # chio = conflim[2]/1000; chio=chio[1:]
+    # cloo = conflim[3]/1000; cloo=cloo[1:]
+    prao=1/fffo
+    # Espectro do modelo
+    # da=dfmod['u']
+    spao_fft = {}
+    for spao in spaos:
+        fffm, hepyam , conflim = spec_sum(spaos[spao],smo=999,win=1)
+        fffm, hepyam = fffm[1:], hepyam[1:]
+        chim = conflim[0]; chim=chim[1:]
+        clom = conflim[1]; clom=clom[1:]
+        pram=1/fffm
+        spao_fft[spao] = [fffm, hepyam, chim, clom, pram]
+
+    # --------- Gráfico -------
+    # from matplotlib.ticker import ScalarFormatter, NullFormatter
+    # import matplotlib.ticker as mticker
+
+    # fig=plt.figure(figsize=(10,5))
+    # ax = fig.add_subplot(111)
+    # ax.set_xlabel(r'Período [dias]')
+    # ax.set_ylabel(r'Densidade Espectral de Potência [$m^2/dia$]')
+    # ax = fig.add_subplot(111)
+    # ax.spines['top'].set_color('none')
+    # ax.spines['bottom'].set_color('none')
+    # ax.spines['left'].set_color('none')
+    # ax.spines['right'].set_color('none')
+    # ax.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
+
+    # ax1=fig.add_subplot(221)
+    # ax2 = fig.add_subplot(222)
+    # ax3 = fig.add_subplot(223)
+    # ax4 = fig.add_subplot(224)
+
+    # axis = [ax1, ax2, ax3, ax4]
+
+    # for axe, spao in zip(axis, spaos):
+    #     axe.loglog(prao,hepyao, label = 'dados', linewidth=1)
+    #     axe.fill_between(prao,cloo,chio,alpha=0.2, color='tab:blue')
+
+    #     axe.loglog(spao_fft[spao][-1],spao_fft[spao][1], label = spao, linewidth=1)
+    #     axe.fill_between(spao_fft[spao][-1],spao_fft[spao][-2],spao_fft[spao][2],alpha=0.2, color='tab:orange')
+    #     axe.legend(loc='lower right')
+    #     axe.grid(which='major')
+    #     axe.grid(which='minor',color='lightgrey')
+    # # ax1.set_major_locator(mticker.MaxNLocator(nbins=9, steps=[1, 2, 5, 10]))
+
+    # # ax1.set_xticks([20, 55])
+    # # ax1.set_yticks([20, 55])
 
 
+    # # plt.title('Componente zonal - '+loc + ' z = '+ str(zp))
+    # # plt.grid(which='major')
+    # # plt.grid(which='minor',color='lightgrey')
+
+# NOVO GRAFICO
+
+    fig=plt.figure(figsize=(20,10))
+    ax = fig.add_subplot(121)
+    ax.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
+    ax.spines['top'].set_color('none')
+    ax.spines['bottom'].set_color('none')
+    ax.spines['left'].set_color('none')
+    ax.spines['right'].set_color('none')
+    ax.set_ylabel(r'Densidade Espectral [$m^2/dia$]')
+    ax.set_xlabel(r'Período [dias]')
+
+    axes = [fig.add_subplot(241), fig.add_subplot(242), fig.add_subplot(245), fig.add_subplot(246)]
+    colors={'HYCOM': 'tab:orange', 'GLOR4':'tab:blue', 'GLOR12':'tab:purple', 'BRAN':'tab:grey'}
+    for axis, spao in zip(axes, spaos):
+        axis.semilogx(prao,hepyao, label = 'DADO', linewidth=1, color='red')
+        axis.fill_between(prao,cloo,chio,alpha=0.2, color='tab:red')
+        axis.semilogx(spao_fft[spao][-1],spao_fft[spao][1], label = spao, linewidth=1, color=colors[spao][4:])
+        axis.fill_between(spao_fft[spao][-1],spao_fft[spao][-2],spao_fft[spao][2],alpha=0.2, color=colors[spao])
+        axis.legend(loc='lower right')
+        axis.grid(which='major')
+        axis.grid(which='minor',color='lightgrey')
+
+    plt.tight_layout()
+    plt.savefig(image_path + 'spectral_anal_semilog.png', dpi=200, bbox_inches='tight')
+    plt.close()
+
+    fig=plt.figure(figsize=(20,10))
+    ax = fig.add_subplot(121)
+    ax.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
+    ax.spines['top'].set_color('none')
+    ax.spines['bottom'].set_color('none')
+    ax.spines['left'].set_color('none')
+    ax.spines['right'].set_color('none')
+    ax.set_ylabel(r'Densidade Espectral [$m^2/dia$]')
+    ax.set_xlabel(r'Período [dias]')
+
+    axes = [fig.add_subplot(241), fig.add_subplot(242), fig.add_subplot(245), fig.add_subplot(246)]
+    colors={'HYCOM': 'tab:orange', 'GLOR4':'tab:blue', 'GLOR12':'tab:purple', 'BRAN':'tab:grey'}
+    for axis, spao in zip(axes, spaos):
+        axis.loglog(prao,hepyao, label = 'DADO', linewidth=1, color='red')
+        axis.fill_between(prao,cloo,chio,alpha=0.2, color='tab:red')
+        axis.loglog(spao_fft[spao][-1],spao_fft[spao][1], label = spao, linewidth=1, color=colors[spao][4:])
+        axis.fill_between(spao_fft[spao][-1],spao_fft[spao][-2],spao_fft[spao][2],alpha=0.2, color=colors[spao])
+        axis.legend(loc='lower right')
+        axis.grid(which='major')
+        axis.grid(which='minor',color='lightgrey')
+
+    plt.tight_layout()
+    plt.savefig(image_path + 'spectral_anal_dilog.png', dpi=200, bbox_inches='tight')
+    plt.close()
+
+    # ax1=fig.add_subplot(121)
+    # # ax1.loglog(prao,hepyao, label = 'dados', linewidth=1)
+    # # ax1.fill_between(prao,cloo,chio,alpha=0.2, color='tab:blue')
+    # ax1.loglog(prao,hepyao, label = 'DADO', linewidth=1, color='red')
+    # ax1.fill_between(prao,cloo,chio,alpha=0.2, color='tab:red')
+    # colors={'HYCOM': 'tab:orange', 'GLOR4':'tab:blue', 'GLOR12':'tab:purple', 'BRAN':'tab:grey'}
+    # for spao in spaos:
+    #     ax1.loglog(spao_fft[spao][-1],spao_fft[spao][1], label = spao, linewidth=1, color=colors[spao][4:])
+    #     ax1.fill_between(spao_fft[spao][-1],spao_fft[spao][-2],spao_fft[spao][2],alpha=0.2, color=colors[spao])
+    # ax1.legend(loc='lower center')
+    # ax1.set_xlabel(r'Período [dias]')
+    # ax.set_ylabel(r'Densidade Espectral de Potência [$m^2/dia$]')
+    # # plt.title('Componente zonal - '+loc + ' z = '+ str(zp))
+    # plt.grid(which='major')
+    # plt.grid(which='minor',color='lightgrey')
 
 
-
+    # fig=plt.figure(figsize=(10,5))
+    # ax1=fig.add_subplot(121)
+    # ax1.loglog(prao,hepyao, label = 'dados', linewidth=1)
+    # ax1.fill_between(prao,cloo,chio,alpha=0.2, color='tab:blue')
+    # ax1.loglog(pram,hepyam, label = 'REMO LSE24', linewidth=1)
+    # ax1.fill_between(pram,clom,chim,alpha=0.2, color='tab:orange')
+    # ax1.legend(loc='lower right')
+    # ax1.set_xlabel(r'Período [h]')
+    # ax1.set_ylabel(r'Densidade Espectral de Potência [$m^2/s^2.h$]')
+    # # plt.title('Componente zonal - '+loc + ' z = '+ str(zp))
+    # plt.grid(which='major')
+    # plt.grid(which='minor',color='lightgrey')
 
 
