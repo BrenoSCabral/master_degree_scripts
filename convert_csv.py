@@ -1,0 +1,1 @@
+# Script criado para converter as saidas dos modelos em csv (pontos especificos)
