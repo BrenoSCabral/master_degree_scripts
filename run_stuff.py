@@ -21,15 +21,15 @@ import le_reanalise
 
 # faz a analise pro dado:
 
-fig_folder = '/Users/breno/Documents/Mestrado/tese/figs/apresentacao/'
-path_dado = '/Users/breno/dados_mestrado/dados/'
-path_reanalise = '/Users/breno/dados_mestrado/dados/reanalise/GLOR4/'
+fig_folder = '/Users/breno/Documents/Mestrado/t1'
+path_dado = '/Volumes/BRENO_HD/dados_mestrado/dados/'
+path_reanalise = '/Volumes/BRENO_HD/dados_mestrado/dados/reanalise/GLOR4/'
 
 filename = 'Ilha Fiscal 2014.txt'
 formato = 'csv'
 nome = 'Ilha Fiscal'
 
-ifi = le_dado.le_dado_csv(filename)
+ifi = le_dado.le_dado_csv(filename, path_dado)
 le_dado.pega_fft(ifi.sea_level, 'Ilha Fiscal', fig_folder)
 
 ifi_band_h = le_dado.roda_analise(filename, formato, nome, 'band',fig_folder=fig_folder,
