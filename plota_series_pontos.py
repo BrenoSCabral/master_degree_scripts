@@ -92,8 +92,7 @@ def cananeia(plot = False):
         plt.grid()
         plt.savefig('/Users/breno/Documents/Mestrado/estudos_dados/'+ponto[:-3] + '.png')
 
-
-def export_serie(path):
+def export_serie(path, pontos_interesse = None):
     pontos_dado = {
     'cananeia' : [-25.02, -47.93],
     'fortaleza' : [-3.72, -38.47],
@@ -113,7 +112,7 @@ def export_serie(path):
     'dhn' : [-22.88, -43.13],#RJ
     'ribamar': [-2.56, -44.05]#MA
     }
-
+    
     excecoes = []
     series = []
     for ponto in os.listdir(path):
@@ -210,6 +209,6 @@ def export_serie(path):
 
             series.append((d_index[0], d_index[-1], ponto, lat))
         except Exception as e:
-            print('erro em ' + ponto)
+            1+1
 
     return series
