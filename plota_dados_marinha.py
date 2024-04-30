@@ -66,66 +66,67 @@ def nome_estacao(i):
     with open(path + '/' + i, 'r', encoding='latin-1') as arquivo:
         return(arquivo.readlines()[2][13:])
 
-pos = []
-norte = []
-for i in os.listdir(path):
-    df = pd.read_csv(path + '/' + i, skiprows=11, sep=';',encoding='latin-1')
-    df.loc[len(df)] = df.columns.to_list()
-    df.columns = ['data', 'ssh', 'Unnamed: 2']
-    df = df.drop(columns=['Unnamed: 2'])
+def do_everything():
+    pos = []
+    norte = []
+    for i in os.listdir(path):
+        df = pd.read_csv(path + '/' + i, skiprows=11, sep=';',encoding='latin-1')
+        df.loc[len(df)] = df.columns.to_list()
+        df.columns = ['data', 'ssh', 'Unnamed: 2']
+        df = df.drop(columns=['Unnamed: 2'])
 
-    # Converter 'data' para formato datetime, se necessário
-    df['data'] = pd.to_datetime(df['data'], format='%d/%m/%Y %H:%M')
-    df.set_index('data', inplace=True)
+        # Converter 'data' para formato datetime, se necessário
+        df['data'] = pd.to_datetime(df['data'], format='%d/%m/%Y %H:%M')
+        df.set_index('data', inplace=True)
 
-    df['ssh'] = df['ssh'].astype(int)
+        df['ssh'] = df['ssh'].astype(int)
 
-    df = df.sort_index()
+        df = df.sort_index()
 
-    lat_lon = get_lat_lon(i)
-    pos.append(lat_lon)
-    if lat_lon[0] > -20:
-        norte.append((df.index[0], df.index[-1], (df.index[-1] - df.index[0]).days, lat_lon[0])) 
+        lat_lon = get_lat_lon(i)
+        pos.append(lat_lon)
+        if lat_lon[0] > -20:
+            norte.append((df.index[0], df.index[-1], (df.index[-1] - df.index[0]).days, lat_lon[0])) 
 
-    fig = plt.figure(figsize=(10, 5))
-    plt.plot(df['ssh'])
-    plt.title(nome_estacao(i))
-    plt.grid()
-    nans = df['ssh'].isna().sum()
-    plt.annotate(f'No NaNs: {nans}', xy=(1, 1.03), xycoords='axes fraction', ha='right', va='top', fontsize=12, color='red', bbox=dict(facecolor='white', edgecolor='red', boxstyle='round,pad=0.5'))
-    plt.annotate(f'di: {df.index[0]}', xy=(0.2, 0.02), xycoords='axes fraction', ha='right', va='top', fontsize=6, color='red', bbox=dict(facecolor='white', edgecolor='red', boxstyle='round,pad=0.5'))
-    plt.annotate(f'df: {df.index[-1]}', xy=(1, 0.02), xycoords='axes fraction', ha='right', va='top', fontsize=6, color='red', bbox=dict(facecolor='white', edgecolor='red', boxstyle='round,pad=0.5'))
-    plt.ylabel('SSH (cm)')
+        fig = plt.figure(figsize=(10, 5))
+        plt.plot(df['ssh'])
+        plt.title(nome_estacao(i))
+        plt.grid()
+        nans = df['ssh'].isna().sum()
+        plt.annotate(f'No NaNs: {nans}', xy=(1, 1.03), xycoords='axes fraction', ha='right', va='top', fontsize=12, color='red', bbox=dict(facecolor='white', edgecolor='red', boxstyle='round,pad=0.5'))
+        plt.annotate(f'di: {df.index[0]}', xy=(0.2, 0.02), xycoords='axes fraction', ha='right', va='top', fontsize=6, color='red', bbox=dict(facecolor='white', edgecolor='red', boxstyle='round,pad=0.5'))
+        plt.annotate(f'df: {df.index[-1]}', xy=(1, 0.02), xycoords='axes fraction', ha='right', va='top', fontsize=6, color='red', bbox=dict(facecolor='white', edgecolor='red', boxstyle='round,pad=0.5'))
+        plt.ylabel('SSH (cm)')
 
-    plt.savefig(f'/Users/breno/Documents/Mestrado/dados/marinha/{nome_estacao(i)}.png')
-    plt.close()
+        plt.savefig(f'/Users/breno/Documents/Mestrado/dados/marinha/{nome_estacao(i)}.png')
+        plt.close()
 
-plota_pontos(pos)
-
-
-
+    plota_pontos(pos)
 
 
-fig, ax = plt.subplots()
 
-# Plotar as linhas horizontais para cada item da lista
-for i in norte:
-    ax.hlines(y=i[-1], xmin=i[0], xmax=i[1], color='blue')
-    # ax.text(data_inicio, i, nome, ha='right', va='center')  # Adiciona o nome do item próximo ao início da linha
 
-# Configurar o eixo y
-# ax.set_yticks(range(len(series_longas)))
-# ax.set_yticklabels([nome for nome, _, _ in series_longas])
 
-# Definir os rótulos dos eixos
-ax.set_xlabel('Data')
+    fig, ax = plt.subplots()
 
-# Definir o título do gráfico
-ax.set_title('Período de Tempo Séries Médias a Norte de 20o')
+    # Plotar as linhas horizontais para cada item da lista
+    for i in norte:
+        ax.hlines(y=i[-1], xmin=i[0], xmax=i[1], color='blue')
+        # ax.text(data_inicio, i, nome, ha='right', va='center')  # Adiciona o nome do item próximo ao início da linha
 
-# Rotacionar os rótulos do eixo x para melhorar a legibilidade
-plt.xticks(rotation=45)
+    # Configurar o eixo y
+    # ax.set_yticks(range(len(series_longas)))
+    # ax.set_yticklabels([nome for nome, _, _ in series_longas])
 
-# Exibir o gráfico
-plt.tight_layout()
-plt.show()
+    # Definir os rótulos dos eixos
+    ax.set_xlabel('Data')
+
+    # Definir o título do gráfico
+    ax.set_title('Período de Tempo Séries Médias a Norte de 20o')
+
+    # Rotacionar os rótulos do eixo x para melhorar a legibilidade
+    plt.xticks(rotation=45)
+
+    # Exibir o gráfico
+    plt.tight_layout()
+    plt.show()
