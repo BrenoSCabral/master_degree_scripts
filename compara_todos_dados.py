@@ -63,6 +63,8 @@ serie_gloss = gloss.export_serie(path)
 
 plot_series(serie_marinha + serie_gloss)
 
+
+'''
 # NNE atual
 serie_total = serie_marinha + serie_gloss
 nnea = []
@@ -71,7 +73,7 @@ for i in serie_total:
         nnea.append(i)
 
 plot_series(nnea, 'nne_dps_2000', [pd.Timestamp("20000101"), pd.Timestamp("20250101")])
-
+'''
 
 #     import matplotlib.pyplot as plt
 #     import matplotlib.dates as mdates
