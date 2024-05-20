@@ -68,6 +68,7 @@ def dependent_stats(model, data):
 
     return(bias, rmse, scrmse)
 
+
 def general_stats(series):
     '''Faz as estatísticas gerais de uma série.
 

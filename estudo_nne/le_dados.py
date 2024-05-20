@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 import os
-from plota_dados_marinha import get_lat_lon, nome_estacao
+from interp_marine import get_lat_lon, nome_estacao
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature

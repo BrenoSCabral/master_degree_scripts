@@ -1,8 +1,24 @@
+"""
+This script provides functions for reading and processing data from various sources, including CSV files and Simcosta data.
+It also includes functions for plotting data points and series.
+
+Functions:
+- find_point(name): Finds the coordinates of a given location name.
+- read_gloss(path, name): Reads and processes data from a CSV file.
+- read_marinha(name): Reads and processes data from a CSV file.
+- get_simcosta_row(n, name): Retrieves a row of data from a Simcosta file.
+- read_simcosta(name): Reads and processes data from a Simcosta file.
+- plota_pontos(pts, namefile): Plots data points on a map.
+- plota_series(series): Plots data series over time.
+- recorta_infos(infos, t0, tf=pd.Timestamp("20250101")): Filters data based on a time range.
+
+Note: This script assumes the presence of certain dependencies, such as pandas, numpy, matplotlib, cartopy, and csv.
+"""
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 import os
-from plota_dados_marinha import get_lat_lon, nome_estacao
+from interp_marine import get_lat_lon, nome_estacao
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -13,6 +29,16 @@ from sys import path
 import csv
 
 def find_point(name):
+    """
+    Finds the coordinates of a given location name.
+
+    Parameters:
+    name (str): The name of the location.
+
+    Returns:
+    list or None: The coordinates of the location in the format [latitude, longitude].
+                 Returns None if the location is not found in the dictionary.
+    """
     pontos = {
         'cananeia' : [-25.02, -47.93],
         'fortaleza' : [-3.72, -38.47],
@@ -31,7 +57,7 @@ def find_point(name):
         'ilhabela' : [-23.77, -45.35], #SP
         'dhn' : [-22.88, -43.13],#RJ
         'ribamar': [-2.56, -44.05]#MA
-        }
+    }
     
     for ponto in pontos:
         if ponto.lower() in name.lower():
@@ -325,7 +351,7 @@ def plota_recorte(recorte, t0, tf):
     plt.savefig(f'/Users/breno/Documents/Mestrado/dados/estudo/abrangencia_{t0.year}_{tf.year}.png')
 
 
-def main():
+def analyse_data():
     files = {}
 
     for i in os.listdir('/Volumes/BRENO_HD/GLOSS'):

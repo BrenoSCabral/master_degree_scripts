@@ -36,7 +36,7 @@ def plot_series(serie, figname='todas_series', xlim=False):
     plt.savefig('/Users/breno/Documents/Mestrado/estudos_dados/' + figname + '.png')
 
 # pegando os dados da marinha:
-import plota_dados_marinha as marinha
+import interp_marine as marinha
 path = '/Users/breno/Downloads/Dados'
 serie_marinha = []
 for i in os.listdir(path):
