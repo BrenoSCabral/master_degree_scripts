@@ -423,6 +423,11 @@ def test_series(serie, lat):
             continue
         print((files[j[i]]['ssh']['2015-01-01':'2016-01-01'] != files[j[i-1]]['ssh']['2015-01-01':'2016-01-01']).sum())
 
+
+def export_series_year(serie, year, name, path):
+    serie[year].to_csv(f'{path}/{name}_{year}.csv')
+
+
 '''
 vou usar a serie 1516 e os seguintes arquivos ao longo da costa:
 -0.06 -> Santana.csvg1
@@ -432,5 +437,5 @@ vou usar a serie 1516 e os seguintes arquivos ao longo da costa:
 -22.9 -> ilha_fiscal.csvg1
 -23.5 -> ubatuba.csvg1
 -25.02 -> cananeia.csvg2
--26.23 -> Porto de são francisco do sul (marinha)
+-26.23 -> Porto de são francisco do sul (marinha) X
 '''
