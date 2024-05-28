@@ -394,7 +394,9 @@ def analyse_data():
     plota_pontos(e0910, '_2009_2010')
 
     e1415 = recorta_infos(infos, pd.Timestamp("20140101"),  pd.Timestamp("20150101"))
+    plota_recorte(e1415, pd.Timestamp("20140101"), pd.Timestamp("20150101"))
     plota_pontos(e1415, '_2014_2015')
+    # -12,97
 
     e1516 = recorta_infos(infos, pd.Timestamp("20150101"),  pd.Timestamp("20160101"))
     plota_pontos(e1516, '_2015_2016')
@@ -427,6 +429,51 @@ def test_series(serie, lat):
 def export_series_year(serie, year, name, path):
     serie[year].to_csv(f'{path}/{name}_{year}.csv')
 
+
+def read_exported_series(path):
+    serie = pd.read_csv(path)
+    serie['data'] = pd.to_datetime(serie['data'])
+    serie.set_index('data', inplace=True)
+    return serie
+
+
+def plota_serie_exportada(dado, nome, path, arg=''):
+    fig = plt.figure(figsize=(15, 5))
+    nome = nome.split('.')[0]
+    plt.plot(dado['ssh'])
+    nans = dado['ssh'].isna().sum()
+    plt.annotate(f'No NaNs: {nans}', xy=(1, 1.03), xycoords='axes fraction', ha='right', va='top',
+                 fontsize=12, color='red', bbox=dict(facecolor='white', edgecolor='red', boxstyle='round,pad=0.5'))
+    plt.grid()
+    plt.title(nome)
+    plt.tight_layout()
+    plt.savefig(path + '/' + nome + arg + '_serie.png')
+
+
+def treat_exported_series(serie):
+    serie['ssh'] = serie['ssh'].astype(float)
+    serie = serie.mask(serie < -100)
+    r_serie = serie['ssh']
+    mask = np.isnan(r_serie)
+    r_serie[mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), r_serie[~mask]) +2
+    serie['ssh'] = r_serie
+    return serie
+
+# f14 = [
+# 'Santana.csvg1',
+# 'Fortaleza.csvg1',
+# 'salvador2.csvg1',
+# 'macae.csvg2',
+# 'ilha_fiscal.csvg1',
+# 'ubatuba.csvg1',
+# 'cananeia.csvg2',
+# 'imbituba.csvg2'
+# ]
+
+# for pt in pts:
+#     nome = pt[1]
+#     dado = treat_exported_series(pt[0])
+#     plota_serie_exportada(dado, nome, '/Users/breno/Documents/Mestrado/resultados/2015/fig/data_analisys/data_series/', 'tratada')
 
 '''
 vou usar a serie 1516 e os seguintes arquivos ao longo da costa:
