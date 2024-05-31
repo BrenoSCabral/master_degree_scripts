@@ -96,8 +96,8 @@ def get_corr(data_name, server, year):
 
     if server:
         model_path = '/data3/MOVAR/modelos/REANALISES/' + str(year)
-        data_path = '/home/bcabral/mestrado/data'
-        fig_folder = '/home/bcabral/mestrado/fig'
+        data_path = '/home/bcabral/mestrado/data/'
+        fig_folder = '/home/bcabral/mestrado/fig/'
 
     else:
         model_path = '/Volumes/BRENO_HD/dados_mestrado/dados/reanalise/BRAN/2014/'
@@ -142,7 +142,7 @@ def main():
     '''
     print('rodando main')
 
-    places = ['santana_2014.csv', 'fortaleza_2014.csv', 'salvador2_2014.csv',
+    places = ['Santana_2014.csv', 'Fortaleza_2014.csv', 'salvador2_2014.csv',
             'macae_2014.csv', 'ilha_fiscal_2014.csv', 'ubatuba_2014.csv', 'cananeia_2014.csv', 'imbituba_2014.csv']
 
     for place in places:
