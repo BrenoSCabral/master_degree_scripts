@@ -12,9 +12,8 @@ from read_data import read_exported_series, treat_exported_series
 import filtro
 
 
-def get_model_region(lat, lon, model_name, model_path):
-    # reanalisys = xr.open_mfdataset(model_path + model_name + '/*.nc')
-    reanalisys = xr.open_mfdataset(model_path + '/*SSH*.nc')
+def get_model_region(lat, lon, model_name, reanalisys):
+    # reanalisys = xr.open_mfdataset(model_path + '/*SSH*.nc')
     reanalisys = set_reanalisys_dims(reanalisys, model_name)
 
     lat_idx = np.abs(reanalisys['latitude'] - lat).argmin().item()
@@ -92,7 +91,7 @@ def get_corr(data_name, server, year):
     # year = 2014
 
     if server:
-        model_path = '/data3/MOVAR/modelos/REANALISES/' + str(year)
+        model_path = '/data3/MOVAR/modelos/REANALISES/'
         data_path = '/home/bcabral/mestrado/data/'
         fig_folder = '/home/bcabral/mestrado/fig/'
 
@@ -119,8 +118,10 @@ def get_corr(data_name, server, year):
     models = ['BRAN', 'CGLO', 'ECCO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']#  ,'SODA']
     for model in models:
         print(model)
+        # setando caminho do servidor
+        reanalisys = xr.open_mfdataset(model_path + model + '/SSH/' + str(year)  + '/*.nc')
     #model = 'BRAN'
-        reanal_subset = get_model_region(lat, lon, model, model_path)
+        reanal_subset = get_model_region(lat, lon, model, reanalisys)
         reanal_subset['ssh'].load()
         reanal_subset = reanal_subset.sel(time=slice(data.index[0], data.index[-1]))
 
