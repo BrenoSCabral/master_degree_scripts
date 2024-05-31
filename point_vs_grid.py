@@ -71,7 +71,7 @@ def mapa_corr():
     fig = plt.figure(figsize=(10, 8))
     ax = plt.axes(projection=ccrs.PlateCarree())
 
-    ax.set_extent([lon+0.6, lon-0.5, lat+0.5, lat-0.5], crs=ccrs.PlateCarree())
+    ax.set_extent([lon+0.4, lon-0.4, lat+0.4, lat-0.4], crs=ccrs.PlateCarree())
 
     ax.add_feature(cfeature.COASTLINE)
     ax.add_feature(cfeature.BORDERS, linestyle=':')
@@ -88,16 +88,13 @@ def mapa_corr():
 
 
 
-    # c = ax.pcolormesh(longitude, latitude, correlation, transform=ccrs.PlateCarree(), cmap='coolwarm')
+    c = ax.pcolormesh(longitude, latitude, correlation, transform=ccrs.PlateCarree(), cmap='coolwarm')
 
-    # cb = plt.colorbar(c, orientation='horizontal', pad=0.05)
-    # cb.set_label('Correlation')
+    cb = plt.colorbar(c, orientation='horizontal', pad=0.05)
+    cb.set_label('Correlation')
 
 
     # c = ax.contourf(longitude, latitude, correlation, transform=ccrs.PlateCarree(), cmap='coolwarm', levels=20)
-
-    # cb = plt.colorbar(c, orientation='horizontal', pad=0.05)
-    # cb.set_label('Correlation')
 
     gl = ax.gridlines(crs=ccrs.PlateCarree(), linewidth=.5,
                         color='black', alpha=0.5, linestyle='--', draw_labels=True)
@@ -170,7 +167,42 @@ lon_indices = range(lon_idx-2, lon_idx+3)
 reanal_subset = reanalisys.isel(latitude=lat_indices, longitude=lon_indices)
 # reference =  ifi[ifi.index.time == pd.to_datetime('03:00:00').time()]
 
+# Vou utilizar o horário das 12h no dado, filtrar ele composto e pegar o resultado do modelo na banda pra fazer
+# o estudo do ponto.
 
+reference = ifi[::12] # dados horarios
+# passa baixa -> reamostra -> passa alta
+ifi_low = filtro.filtra_dados(reference['ssh'], reference.index, 'ifi', fig_folder, 'low')
+ifi_low = ifi_low[::24]
+ifi_high = filtro.filtra_dados(ifi_low, reference.index[::24], 'ifi', fig_folder, 'high')
+
+ifi_filt = ifi_high
+
+
+reanal_subset['ssh'].load()
+
+
+# locsubset = reanal_subset.isel(latitude=0, longitude=0)
+# mod_ssh = locsubset['ssh'].values
+# mod_time = locsubset['time'].values
+
+
+# 2 - passa banda -> Passa banda n ta funcionando muito legal nao
+
+correlation = np.empty((len(reanal_subset.latitude), len(reanal_subset.longitude)))
+for i in range(len(reanal_subset.latitude)):
+    for j in range(len(reanal_subset.longitude)):
+        model_series = reanal_subset.isel(latitude=i, longitude=j)
+        mod_ssh = model_series['ssh'].values
+        mod_time = model_series['time'].values
+        mod_band = filtro.filtra_dados(mod_ssh, mod_time, 'mod', fig_folder, 'band', modelo = True)
+        correlation[i, j] = np.corrcoef(ifi_filt, mod_band)[0, 1]
+correlation
+
+
+#################
+#################
+# TESTES
 reference = ifi[::12] # dados horarios
 # passa baixa -> reamostra -> passa alta
 ifi_low = filtro.filtra_dados(reference['ssh'], reference.index, 'ifi', fig_folder, 'low')
