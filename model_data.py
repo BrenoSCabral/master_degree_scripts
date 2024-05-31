@@ -42,7 +42,7 @@ def mapa_corr(lon_point, lat_point, reanal_subset, correlation, nome_modelo, nom
     fig = plt.figure(figsize=(10, 8))
     ax = plt.axes(projection=ccrs.PlateCarree())
 
-    ax.set_extent([lon_point+0.4, lon_point-0.4, lat_point+0.4, lat_point-0.4], crs=ccrs.PlateCarree())
+    ax.set_extent([lon_point+1, lon_point-1, lat_point+1, lat_point-1], crs=ccrs.PlateCarree())
 
     ax.add_feature(cfeature.COASTLINE)
     ax.add_feature(cfeature.BORDERS, linestyle=':')
@@ -77,7 +77,7 @@ def mapa_corr(lon_point, lat_point, reanal_subset, correlation, nome_modelo, nom
     gl.xlabel_style = {'color': 'red'}
     # ax.set_title(f'Ponto {nome_ponto}')
 
-    plt.tight_layout()
+    # plt.tight_layout()
 
     plt.title('Corr. ' + nome_modelo + ' x ' + nome_ponto)
 
@@ -115,7 +115,8 @@ def get_corr(data_name, server, year):
 
     data_filt = data_high
 
-    models = ['BRAN', 'CGLO', 'ECCO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']#  ,'SODA']
+    # ECCO atualiza de 3 em 3 dias
+    models = ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']#  'ECCO' ,'SODA']
     for model in models:
         print(model)
         # setando caminho do servidor
