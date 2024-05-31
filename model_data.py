@@ -7,9 +7,6 @@ from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 import xarray as xr
 import numpy as np
 import os
-from sys import path
-path.append('old')
-
 from read_reanalisys import set_reanalisys_dims
 from read_data import read_exported_series, treat_exported_series
 import filtro
@@ -37,7 +34,7 @@ def get_correlation(filt_data, model_subset, fig_folder):
             model_series = model_subset.isel(latitude=i, longitude=j)
             mod_ssh = model_series['ssh'].values
             mod_time = model_series['time'].values
-            mod_band = filtro.filtra_dados(mod_ssh, mod_time, 'mod', fig_folder + '/filtro', 'band', modelo = True)
+            mod_band = filtro.filtra_dados(mod_ssh, mod_time, 'band', modelo = True)
             correlation[i, j] = np.corrcoef(filt_data, mod_band)[0, 1]
     return correlation
 
@@ -113,9 +110,9 @@ def get_corr(data_name, server, year):
     lat = data['lat'][0]
     lon = data['lon'][0]
 
-    data_low = filtro.filtra_dados(data['ssh'], data.index, 'data', fig_folder + '/filtro', 'low')
+    data_low = filtro.filtra_dados(data['ssh'], data.index, 'low', modelo = False)
     data_low = data_low[::24]
-    data_high = filtro.filtra_dados(data_low, data.index[::24], 'data', fig_folder + '/filtro', 'high')
+    data_high = filtro.filtra_dados(data_low, data.index[::24], 'high')
 
     data_filt = data_high
 
