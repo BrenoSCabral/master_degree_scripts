@@ -119,17 +119,18 @@ def get_corr(data_name, server, year):
 
     data_filt = data_high
 
-    #models = ['BRAN', 'CGLO', 'ECCO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']#  ,'SODA']
-    # for model in models:
-    model = 'BRAN'
-    reanal_subset = get_model_region(lat, lon, model, model_path)
-    reanal_subset['ssh'].load()
-    reanal_subset = reanal_subset.sel(time=slice(data.index[0], data.index[-1]))
+    models = ['BRAN', 'CGLO', 'ECCO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']#  ,'SODA']
+    for model in models:
+        print(model)
+    #model = 'BRAN'
+        reanal_subset = get_model_region(lat, lon, model, model_path)
+        reanal_subset['ssh'].load()
+        reanal_subset = reanal_subset.sel(time=slice(data.index[0], data.index[-1]))
 
 
-    correlation = get_correlation(data_filt, reanal_subset, fig_folder)
+        correlation = get_correlation(data_filt, reanal_subset, fig_folder)
 
-    mapa_corr(lon, lat, reanal_subset, correlation, model, '_'.join(str.split(data_name, '_')[:-1]), fig_folder)
+        mapa_corr(lon, lat, reanal_subset, correlation, model, '_'.join(str.split(data_name, '_')[:-1]), fig_folder)
 
 
 def main():
@@ -139,16 +140,22 @@ def main():
         esse script no servidor. Uma vez pegando o bisu dele e isso aqui rodando no servidor, eu vou conseguir.
 
     '''
+    print('rodando main')
+
     places = ['santana_2014.csv', 'fortaleza_2014.csv', 'salvador2_2014.csv',
             'macae_2014.csv', 'ilha_fiscal_2014.csv', 'ubatuba_2014.csv', 'cananeia_2014.csv', 'imbituba_2014.csv']
 
     for place in places:
-        # get_corr(place, False, 2014)
+        print(f'rodando para {place}')
+        get_corr(place, True, 2014)
 
-        data_raw = read_exported_series(f'/Users/breno/Documents/Mestrado/resultados/2014/data/{place}')
-        data = treat_exported_series(data_raw)
+        # data_raw = read_exported_series(f'/Users/breno/Documents/Mestrado/resultados/2014/data/{place}')
+        # data = treat_exported_series(data_raw)
 
-        plt.figure(figsize=(15,10))
-        plt.plot(data['ssh'])
-        plt.grid()
-        plt.savefig('/Users/breno/Documents/Mestrado/resultados/2014/figs/series/' + str.split(place, '.')[0] + '.png')
+        # plt.figure(figsize=(15,10))
+        # plt.plot(data['ssh'])
+        # plt.grid()
+        # plt.savefig('/Users/breno/Documents/Mestrado/resultados/2014/figs/series/' + str.split(place, '.')[0] + '.png')
+
+if __name__ == "__main__":
+    main()

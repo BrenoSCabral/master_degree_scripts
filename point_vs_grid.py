@@ -1,4 +1,4 @@
-home_path =  '/home/bcabral/' # set for Server
+# home_path =  '/home/bcabral/' # set for Server
 
 from matplotlib import pyplot as plt
 import matplotlib.ticker as mticker
