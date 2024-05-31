@@ -82,7 +82,7 @@ def filtra_dados(nivel_mar, tempo,  metodo, modelo = False, plot=False, fig_fold
     elif metodo == 'high':
         b, a = passa_alta(plot, fig_folder)
 
-    nivel_mar_filtrado = aplica_filtro(b,a, nivel_mar, tempo, nome_serie, plot, fig_folder)
+    nivel_mar_filtrado = aplica_filtro(b,a, nivel_mar, plot, tempo, nome_serie, fig_folder)
     return nivel_mar_filtrado
 
 
