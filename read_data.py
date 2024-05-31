@@ -227,8 +227,6 @@ def plota_pontos(pts, namefile):
     ax.add_feature(cfeature.COASTLINE, zorder=10)
     ax.set_extent([-60, -30, 5, -40], crs=ccrs.PlateCarree())
 
-    # ax.set_extent([-40, 10, -50, -30], crs=coord)
-
     for point in pts:
         marker = 'P'
         if point[2] == 's':
@@ -301,7 +299,6 @@ def plota_series(series):
 
 
         ax.hlines(y=lat, xmin=data_i, xmax=datas[-1], color=color)
-        # ax.text(data_i, lat, nome, ha='right', va='center', size='small')
     
     plt.xlim([pd.Timestamp("19960101"), pd.Timestamp("20250101")])
 
@@ -345,8 +342,6 @@ def plota_recorte(recorte, t0, tf):
         plt.plot(i[3], [i[0]]*len(i[3]), color=color)
 
     plt.xlim(t0, tf)
-    # plt.legend(loc='lower left', ncol=2)
-    # plt.legend(bbox_to_anchor=(1.05, 0.5))
     plt.grid(axis='x')
     plt.savefig(f'/Users/breno/Documents/Mestrado/dados/estudo/abrangencia_{t0.year}_{tf.year}.png')
 
@@ -382,8 +377,6 @@ def analyse_data():
     for file in files:
         d = files[file]
         infos.append((d['lat'][0], d['lon'][0], file[-1], d.index, file))
-        # infos.append((d.index, d['lat'][0], file.split('.')[0], file[-1]))
-        # pts.append([d['lat'][0], d['lon'][0], file[-1]])
 
     plota_pontos(infos, 'total')
 
@@ -396,16 +389,9 @@ def analyse_data():
     e1415 = recorta_infos(infos, pd.Timestamp("20140101"),  pd.Timestamp("20150101"))
     plota_recorte(e1415, pd.Timestamp("20140101"), pd.Timestamp("20150101"))
     plota_pontos(e1415, '_2014_2015')
-    # -12,97
 
     e1516 = recorta_infos(infos, pd.Timestamp("20150101"),  pd.Timestamp("20160101"))
     plota_pontos(e1516, '_2015_2016')
-    # -12,97 nao usar salvador_glossbrasil.csvg1 -> salvador2.csvg1 e salvador_2004_2015.csvg1 sao iguais (nesse intervalo)
-    # -> salvador2.csvg2/'Salvador_glossbrasil.csvg1' tem dado de 5 em 5 min e eh meio diferente a forma que o dado é mostrado 
-    # -> 'CAPITANIA DE SALVADORm' eh parecido c os dois acima, mas com resultado horario e valores absolutos diferentes
-    # -23,5 -> ['ubatuba.csvg1', 'Ubatuba_gloss.csvg1', 'ubatuba.csvg2'] -> os 3 sao iguais
-    # -25,02 -> qqr cananeia serve
-    # -3,72 -> os dois fortaleza tao diferente e tem resolucao horaria diferente. n sei oq usar.
 
     e1920 = recorta_infos(infos, pd.Timestamp("20190101"),  pd.Timestamp("20200101"))
     plota_pontos(e1920, '_2019_2020')
@@ -452,6 +438,9 @@ def plota_serie_exportada(dado, nome, path, arg=''):
 
 def treat_exported_series(serie):
     serie['ssh'] = serie['ssh'].astype(float)
+    serie = serie[serie.index.minute == 0]
+    serie = start_midnight(serie)
+    serie = fill_dataframe(serie, serie.index[0], serie.index[-1])
     serie = serie.mask(serie < -100)
     r_serie = serie['ssh']
     mask = np.isnan(r_serie)
@@ -459,30 +448,23 @@ def treat_exported_series(serie):
     serie['ssh'] = r_serie
     return serie
 
-# f14 = [
-# 'Santana.csvg1',
-# 'Fortaleza.csvg1',
-# 'salvador2.csvg1',
-# 'macae.csvg2',
-# 'ilha_fiscal.csvg1',
-# 'ubatuba.csvg1',
-# 'cananeia.csvg2',
-# 'imbituba.csvg2'
-# ]
 
-# for pt in pts:
-#     nome = pt[1]
-#     dado = treat_exported_series(pt[0])
-#     plota_serie_exportada(dado, nome, '/Users/breno/Documents/Mestrado/resultados/2015/fig/data_analisys/data_series/', 'tratada')
+def start_midnight(df, h=0):
+    df_mod = df.copy()
 
-'''
-vou usar a serie 1516 e os seguintes arquivos ao longo da costa:
--0.06 -> Santana.csvg1
--3.72 -> Fortaleza.csvg1
--12.97 -> salvador2.csvg1
--22.23 -> macae.csvg2
--22.9 -> ilha_fiscal.csvg1
--23.5 -> ubatuba.csvg1
--25.02 -> cananeia.csvg2
--26.23 -> Porto de são francisco do sul (marinha) X
-'''
+    while df_mod.index[0].hour != h:
+        df_mod = df_mod[1:]
+        if len(df_mod) == 0:
+            if h == 12:
+                return np.nan
+            df_mod = start_midnight(df, h+1)
+            break
+    
+    return df_mod
+
+def fill_dataframe(df, t0, tf):
+    idx = pd.date_range(t0, tf, freq='H')
+    df = df[~df.index.duplicated()]
+    df = df.reindex(idx, fill_value=np.nan)
+    return df
+
