@@ -102,7 +102,7 @@ def get_corr(data_name, server, year):
 
     
 
-    data_raw = read_exported_series(data_path + str(year) + data_name)
+    data_raw = read_exported_series(data_path + str(year) + '/' + data_name)
     data = treat_exported_series(data_raw)
     # data.resample('H').median()
 
@@ -135,8 +135,10 @@ def get_corr(data_name, server, year):
 def main():
     print('rodando main')
 
-    places = ['Santana_2014.csv', 'Fortaleza_2014.csv', 'salvador2_2014.csv',
-            'macae_2014.csv', 'ilha_fiscal_2014.csv', 'ubatuba_2014.csv', 'cananeia_2014.csv', 'imbituba_2014.csv']
+    # places = ['Santana_2014.csv', 'Fortaleza_2014.csv', 'salvador2_2014.csv',
+    #         'macae_2014.csv', 'ilha_fiscal_2014.csv', 'ubatuba_2014.csv', 'cananeia_2014.csv', 'imbituba_2014.csv']
+
+    places = ['CAPITANIA DE SALVADORm_2012.csv', 'Fortaleza_2012.csv', 'ilha_fiscal_2012.csv', 'TEPORTIm_2012.csv', 'macae_2012.csv']
 
     for place in places:
         print(f'rodando para {place}')
