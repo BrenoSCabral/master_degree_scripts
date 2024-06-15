@@ -102,7 +102,7 @@ def get_corr(data_name, server, year):
 
     
 
-    data_raw = read_exported_series(data_path + data_name)
+    data_raw = read_exported_series(data_path + str(year) + data_name)
     data = treat_exported_series(data_raw)
     # data.resample('H').median()
 
@@ -133,12 +133,6 @@ def get_corr(data_name, server, year):
 
 
 def main():
-    '''
-        TODO: Olha, me desanimei com a qualidade dos dados. TEM QUE VALER A PENA CONTINUAR, E EU VOU CONTINUAR.
-        Vou marcar um dia pra falar com o Pedro e entender como ele trabalhou esses dados, paralelamente, vou testar
-        esse script no servidor. Uma vez pegando o bisu dele e isso aqui rodando no servidor, eu vou conseguir.
-
-    '''
     print('rodando main')
 
     places = ['Santana_2014.csv', 'Fortaleza_2014.csv', 'salvador2_2014.csv',
@@ -146,7 +140,7 @@ def main():
 
     for place in places:
         print(f'rodando para {place}')
-        get_corr(place, True, 2014)
+        get_corr(place, True, 2012)
 
         # data_raw = read_exported_series(f'/Users/breno/Documents/Mestrado/resultados/2014/data/{place}')
         # data = treat_exported_series(data_raw)
@@ -158,3 +152,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
