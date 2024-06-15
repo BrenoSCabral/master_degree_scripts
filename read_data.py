@@ -195,6 +195,9 @@ def read_simcosta(name):
     df['data'] = d_index
     df.set_index('data', inplace=True)
     df.drop(columns=['YEAR', 'MONTH', 'DAY', 'HOUR', 'MINUTE', 'SECOND'], inplace=True)
+    if len(df.columns) > 1:
+        df = df.iloc[:,:-len(df.columns)+1]
+    df.columns = ['ssh']
 
 
     df = df.sort_index()
@@ -378,6 +381,13 @@ def analyse_data():
         d = files[file]
         infos.append((d['lat'][0], d['lon'][0], file[-1], d.index, file))
 
+
+    # exporta todos os arquivos no formato
+    # for file in files:
+    #     name = str.split(file,'.')[0]
+    #     file = files[file]
+    #     file.to_csv(f'/Users/breno/Documents/Mestrado/resultados/data/{name}.csv')
+
     plota_pontos(infos, 'total')
 
     dps95 = recorta_infos(infos, pd.Timestamp("19950101"))
@@ -441,11 +451,15 @@ def treat_exported_series(serie):
     serie = serie[serie.index.minute == 0]
     serie = start_midnight(serie)
     serie = fill_dataframe(serie, serie.index[0], serie.index[-1])
-    serie = serie.mask(serie < -100)
-    r_serie = serie['ssh']
-    mask = np.isnan(r_serie)
-    r_serie[mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), r_serie[~mask]) +2
-    serie['ssh'] = r_serie
+
+    # serie = serie.where(serie > serie.mean() - 5* serie.std())
+    # serie = serie.where(serie > serie.mean() + 5* serie.std())
+
+    # serie = serie.mask(serie < -100)
+    # r_serie = serie['ssh']
+    # mask = np.isnan(r_serie)
+    # r_serie[mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), r_serie[~mask]) +2
+    # serie['ssh'] = r_serie
     return serie
 
 
@@ -462,9 +476,100 @@ def start_midnight(df, h=0):
     
     return df_mod
 
+
 def fill_dataframe(df, t0, tf):
     idx = pd.date_range(t0, tf, freq='H')
     df = df[~df.index.duplicated()]
     df = df.reindex(idx, fill_value=np.nan)
     return df
 
+
+def all_series(files):
+    path_data = '/Users/breno/Documents/Mestrado/resultados/data'
+    files = os.listdir(path_data)
+    treated = {}
+    for file in files:
+        if file[-1:] != 'v':
+            continue
+        treated[file] = treat_exported_series(read_exported_series(path_data + '/' + file))
+
+
+# essa analise aqui embaixo vale a pena quando eu delimitar o ano e a regiao de interesse
+    # dec = []
+    # ruim = []
+    # ns = []
+    # for serie in treated:
+    #     plt.plot(treated[serie]['ssh'])
+    #     plt.show()
+    #     state = input('decente?')
+    #     if state == '1':
+    #         dec.append(serie)
+    #     elif state == '2':
+    #         ruim.append(serie)
+    #     elif state == '0':
+    #         ns.append(serie)
+    #     plt.close('all')
+
+    for serie in treated:        
+        nans = treated[serie]['ssh']['1995':].isna().sum()
+        if nans != 0:
+            print(f'{serie} - {nans}')
+
+
+    plt.plot(treated['salvador.csv']['ssh'])
+    plt.plot(treated['salvador2.csv']['ssh']) # <- melhor serie dentro dos salvador
+    plt.plot(treated['Salvador_glossbrasil.csv']['ssh'])
+
+
+def adjindex(df):
+    dfs= [df.reset_index(drop=False) for g,df in df.dropna().groupby(df['ssh'].isna().cumsum())]
+    dfs_adj = []
+    for df in dfs:
+        df = df.rename({'index':'data'}, axis='columns')
+        df.index = df['data']
+        df = df.drop(columns=['data'])
+
+        dfs_adj.append(df)
+    return dfs_adj
+
+
+def get_extracted_infos(series):
+    infos = []
+    for serie in series:
+        dfs = adjindex(series[serie])
+        for d in dfs:
+            infos.append((d['lat'][0], d['lon'][0], d.index))
+    return infos
+
+
+def plot_extracted_series(series, d0, df):
+    fig, ax = plt.subplots(figsize=(10, 15))
+    for serie in series:
+        datas = serie[2]
+        lat = serie[0]
+
+        if datas[-1] < pd.Timestamp(d0):
+            continue
+        elif datas[0] < pd.Timestamp(d0):
+            data_i = pd.Timestamp(d0)
+        else:
+            data_i = datas[0]
+
+
+
+        ax.hlines(y=lat, xmin=data_i, xmax=datas[-1])
+    
+    plt.xlim([pd.Timestamp(d0), pd.Timestamp(df)])
+
+    plt.grid()
+
+    plt.tight_layout()
+    plt.savefig(f'/Users/breno/Documents/Mestrado/resultados/abrangencia_series_{d0[:4]}_{df[:4]}.png')
+
+def exporta_serie_tratada():
+    for serie in treated:
+        try:
+            treated[serie].index.names = ['data']
+            export_series_year(treated[serie], '2012', serie[:-4], '/Users/breno/Documents/Mestrado/resultados/2012/data')
+        except Exception:
+            continue
