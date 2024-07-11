@@ -423,3 +423,60 @@ def plot():
     # plt.grid(which='minor',color='lightgrey')
 
 
+def sing_plot(hepyao, chio, cloo, prao, image_path):
+    fig=plt.figure(figsize=(20,10))
+    ax = fig.add_subplot(121)
+    # ax.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
+    # ax.spines['top'].set_color('none')
+    # ax.spines['bottom'].set_color('none')
+    # ax.spines['left'].set_color('none')
+    # ax.spines['right'].set_color('none')
+    ax.set_ylabel(r'Densidade Espectral [$m^2/dia$]')
+    ax.set_xlabel(r'Período [dias]')
+
+    ax.semilogx(prao,hepyao, label = 'DADO', linewidth=1, color='red')
+    ax.set_xlim(0,25)
+    ax.fill_between(prao,cloo,chio,alpha=0.2, color='tab:red')
+    ax.legend(loc='lower right')
+    ax.grid(which='major')
+    ax.grid(which='minor',color='lightgrey')
+
+    plt.tight_layout()
+    plt.savefig(image_path + 'spectral_anal_semilog.png', dpi=200, bbox_inches='tight')
+    plt.close()
+
+
+# log log
+    fig=plt.figure(figsize=(20,10))
+    ax = fig.add_subplot(121)
+    # ax.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
+    # ax.spines['top'].set_color('none')
+    # ax.spines['bottom'].set_color('none')
+    # ax.spines['left'].set_color('none')
+    # ax.spines['right'].set_color('none')
+    ax.set_ylabel(r'Densidade Espectral [$m^2/dia$]')
+    ax.set_xlabel(r'Período [dias]')
+
+    ax.loglog(prao,hepyao, label = 'DADO', linewidth=1, color='red')
+    ax.fill_between(prao,cloo,chio,alpha=0.2, color='tab:red')
+    ax.legend(loc='lower right')
+    ax.grid(which='major')
+    ax.grid(which='minor',color='lightgrey')
+
+    plt.tight_layout()
+    plt.savefig(image_path + 'spectral_anal_loglog.png', dpi=200, bbox_inches='tight')
+    plt.close()
+
+
+def main():
+    # getting result: (data must be an xarray)
+    # for instance:     
+    # data_raw_xr = xr.DataArray(np.asarray(data['ssh']), 
+    # coords={'time': data.index}, 
+    # dims=["time"])
+
+    fffo, hepyao, conflim = spec_sum(data_raw_xr/100,smo=999,win=1)
+    fffo, hepyao = fffo[1:], hepyao[1:]
+    chio = conflim[0]; chio=chio[1:]
+    cloo = conflim[1]; cloo=cloo[1:]
+    prao=1/fffo
