@@ -10,6 +10,7 @@ import os
 from read_reanalisys import set_reanalisys_dims
 from read_data import read_exported_series, treat_exported_series
 import filtro
+import json
 
 
 def get_model_region(lat, lon, model_name, reanalisys):
@@ -28,6 +29,7 @@ def get_model_region(lat, lon, model_name, reanalisys):
 
 def get_correlation(filt_data, model_subset, fig_folder):
     correlation = np.empty((len(model_subset.latitude), len(model_subset.longitude)))
+    latlons = np.zeros((len(model_subset.latitude), len(model_subset.longitude)), dtype=object)
     for i in range(len(model_subset.latitude)):
         for j in range(len(model_subset.longitude)):
             model_series = model_subset.isel(latitude=i, longitude=j)
@@ -35,7 +37,8 @@ def get_correlation(filt_data, model_subset, fig_folder):
             mod_time = model_series['time'].values
             mod_band = filtro.filtra_dados(mod_ssh, mod_time, 'band', modelo = True)
             correlation[i, j] = np.corrcoef(filt_data, mod_band)[0, 1]
-    return correlation
+            latlons[i,j] = (float(model_series['latitude'].values), float(model_series['longitude'].values))
+    return correlation, latlons
 
 
 def mapa_corr(lon_point, lat_point, reanal_subset, correlation, nome_modelo, nome_ponto, fig_folder):
@@ -85,6 +88,10 @@ def mapa_corr(lon_point, lat_point, reanal_subset, correlation, nome_modelo, nom
     plt.savefig(f'{fig_folder}/correlacao/{nome_ponto}/{nome_modelo}.png')
 
 
+def write_json(latlon, point, model):
+    {point: {model: latlon}}
+
+
 def get_corr(data_name, server, year):
     # server = False
     # data_name = 'santana_2014.csv'
@@ -97,12 +104,13 @@ def get_corr(data_name, server, year):
 
     else:
         model_path = '/Volumes/BRENO_HD/dados_mestrado/dados/reanalise/BRAN/2014/'
-        fig_folder = '/Users/breno/Documents/Mestrado/resultados/2014/figs'
-        data_path  = '/Users/breno/Documents/Mestrado/resultados/2014/data/'
+        fig_folder = '/Users/breno/Documents/Mestrado/resultados/2012/figs'
+        data_path  = '/Users/breno/Documents/Mestrado/resultados/2012/data/'
 
     
 
     data_raw = read_exported_series(data_path + str(year) + '/' + data_name)
+    # data_raw = read_exported_series('/Users/breno/Documents/Mestrado/resultados/2012/data/' + data_name)
     data = treat_exported_series(data_raw)
     # data.resample('H').median()
 
@@ -115,8 +123,11 @@ def get_corr(data_name, server, year):
 
     data_filt = data_high
 
+    # make_spectrum(data['ssh'], data_filt, data_name[:-4])
+
     # ECCO atualiza de 3 em 3 dias
     models = ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']#  'ECCO' ,'SODA']
+    json_dict = {}
     for model in models:
         print(model)
         # setando caminho do servidor
@@ -127,9 +138,16 @@ def get_corr(data_name, server, year):
         reanal_subset = reanal_subset.sel(time=slice(data.index[0], data.index[-1]))
 
 
-        correlation = get_correlation(data_filt, reanal_subset, fig_folder)
+        correlation, latlons= get_correlation(data_filt, reanal_subset, fig_folder)
 
-        mapa_corr(lon, lat, reanal_subset, correlation, model, '_'.join(str.split(data_name, '_')[:-1]), fig_folder)
+        correlation[np.isnan(correlation)] = -np.inf
+        max_index = np.unravel_index(np.argmax(correlation, axis=None), correlation.shape)
+
+        json_dict[model] = latlons[max_index]
+        # mapa_corr(lon, lat, reanal_subset, correlation, model, '_'.join(str.split(data_name, '_')[:-1]), fig_folder)
+    
+    with open(f'/home/bcabral/mestrado/{data_name[:-4]}.json', 'w') as f:
+        json.dump(json_dict, f)
 
 
 def main():
@@ -138,7 +156,7 @@ def main():
     # places = ['Santana_2014.csv', 'Fortaleza_2014.csv', 'salvador2_2014.csv',
     #         'macae_2014.csv', 'ilha_fiscal_2014.csv', 'ubatuba_2014.csv', 'cananeia_2014.csv', 'imbituba_2014.csv']
 
-    places = ['CAPITANIA DE SALVADORm_2012.csv', 'Fortaleza_2012.csv', 'ilha_fiscal_2012.csv', 'TEPORTIm_2012.csv', 'macae_2012.csv']
+    places = ['CAPITANIA DE SALVADORm_2012.csv', 'Fortaleza_2012.csv', 'ilha_fiscal_2012.csv', 'TEPORTIm_2012.csv']# , 'macae_2012.csv']
 
     for place in places:
         print(f'rodando para {place}')
