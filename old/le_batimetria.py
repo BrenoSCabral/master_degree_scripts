@@ -66,29 +66,29 @@ fig.colorbar(bathy, ax=ax, orientation="vertical", label="Batimetria (m)", shrin
 
 
 pontos_goo = {
-    'Cananeia' : [-25.02, -47.93],
-    'Fernando de Noronha' : [-3.83, -32.40],
-    'Fortaleza' : [-3.72, -38.47],
+    # 'Cananeia' : [-25.02, -47.93],
+    # 'Fernando de Noronha' : [-3.83, -32.40],
+    # 'Fortaleza' : [-3.72, -38.47],
     'Ilha Fiscal' : [-22.90, -43.17],
-    'Ilha Trindade' : [-20.50, -29.32],
-    'Imbituba' : [-28.13, -48.40],
-    'Macaé (Imbetiba)' : [-22.23, -41.47],
-    'Rio Grande' : [-32.13, -52.10],
+    # 'Ilha Trindade' : [-20.50, -29.32],
+    # 'Imbituba' : [-28.13, -48.40],
+    # 'Macaé (Imbetiba)' : [-22.23, -41.47],
+    # 'Rio Grande' : [-32.13, -52.10],
     'Salvador' : [-12.97, -38.52],
-    'Santana' : [-0.06, -51.17],
-    'São Pedro e São Paulo' : [3.83, -32.40],
-    'Ubatuba' : [-23.50, -45.12]
+    # 'Santana' : [-0.06, -51.17],
+    # 'São Pedro e São Paulo' : [3.83, -32.40],
+    # 'Ubatuba' : [-23.50, -45.12]
 }
 
-pontos_sim = {
-    'Rio Grande 2' : [-32.17, -52.09], #RS
-    'Tramandaí' : [-30.00, -50.13], #RS
-    'Paranaguá' : [-25.50, -48.53], #PR
-    'Pontal do Sul' : [-25.55, -48.37], #PR
-    'Ilhabela' : [-23.77, -45.35], #SP
-    'DHN' : [-22.88, -43.13],#RJ
-    'Ribamar': [-2.56, -44.05]#MA
-    }
+# pontos_sim = {
+#     'Rio Grande 2' : [-32.17, -52.09], #RS
+#     'Tramandaí' : [-30.00, -50.13], #RS
+#     'Paranaguá' : [-25.50, -48.53], #PR
+#     'Pontal do Sul' : [-25.55, -48.37], #PR
+#     'Ilhabela' : [-23.77, -45.35], #SP
+#     'DHN' : [-22.88, -43.13],#RJ
+#     'Ribamar': [-2.56, -44.05]#MA
+#     }
 
 def convert(tude):
     multiplier = 1 if tude[-1] in ['N', 'E'] else -1
@@ -107,30 +107,35 @@ ax.add_feature(cfeature.COASTLINE, zorder=10)
 # ax.set_extent([-40, 10, -50, -30], crs=coord)
 
 for i in pontos_goo:
+    if i[0] == 'I':
+        color = 'red'
+    else:
+        color = 'yellow'
     plt.plot(pontos_goo[i][1], pontos_goo[i][0],
-            color='red', linewidth=2, marker='P',
+            color=color, linewidth=2, marker='P', label = i,
             transform=ccrs.PlateCarree()
             )  
     # plt.text(pontos_goo[i][1] - 0.05, pontos_goo[i][0] - 0.05, i,
     #         horizontalalignment='right', color = 'red', weight = 'bold',
     #         transform=ccrs.PlateCarree(), fontsize = 10)
 
-for j in pontos_sim:
-    plt.plot(pontos_sim[j][1], pontos_sim[j][0],
-            color='yellow', linewidth=2, marker='o',
-            transform=ccrs.PlateCarree()
-            )  
+# for j in pontos_sim:
+#     plt.plot(pontos_sim[j][1], pontos_sim[j][0],
+#             color='yellow', linewidth=2, marker='o',
+#             transform=ccrs.PlateCarree()
+#             )  
     # plt.text(pontos_sim[j][1] - 0.05, pontos_sim[j][0] - 0.05, j,
     #         horizontalalignment='right', color = 'green', weight = 'bold',
     #         transform=ccrs.PlateCarree(), fontsize = 10)
 
 legend_elements = [
-    Line2D([0],[0], color = 'red', marker='P', label='GOOS', markerfacecolor='red', markersize=15, linestyle = ''),
-    Line2D([0],[0], color = 'yellow', marker='o', label='SiMCosta', markerfacecolor='yellow',
+    Line2D([0],[0], color = 'red', marker='P', label='Ilha Fiscal', markerfacecolor='red', markersize=15, linestyle = ''),
+    Line2D([0],[0], color = 'yellow', marker='P', label='Salvador', markerfacecolor='yellow',
             markersize=15,  linestyle = '')
 ]
 
 ax.legend(handles = legend_elements, loc='lower right')
+# ax.legend(loc = 'lower right')
 
 lons = np.arange(bathy_lon.min().round(0), bathy_lon.max().round(0), 5)
 lats = np.arange(bathy_lat.min().round(0), bathy_lat.max().round(0), 5)
@@ -148,4 +153,4 @@ gl.yformatter = LATITUDE_FORMATTER
 
 plt.tight_layout()
 fig.colorbar(bathy, ax=ax, orientation="vertical", label="(m)", shrink=0.7, pad=0.08, aspect=40)
-# plt.savefig()
+plt.savefig('/Users/breno/Documents/Mestrado/resultados/2012/figs/cmap.png')
