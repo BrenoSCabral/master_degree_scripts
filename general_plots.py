@@ -48,7 +48,7 @@ def plot_spectrum(seri1, title, path, figname, data=True):
 
     # ax.set_xticklabels([3, 5, 10, 20, 30, 40])
 
-    ax.set_ylabel('Densidade Espectral [m²/dia]')
+    ax.set_ylabel('Densidade Espectral [cm²/dia]')
     ax.set_xlabel('Dias')
     os.makedirs(path, exist_ok=True)
     plt.savefig(path + figname)
@@ -93,7 +93,7 @@ def plot_double_spectrum(data, filtered, title, path, figname, mdata = True):
 
     # ax.set_xticklabels([3, 5, 10, 20, 30, 40])
 
-    ax.set_ylabel('Densidade Espectral [m²/dia]')
+    ax.set_ylabel('Densidade Espectral [cm²/dia]')
     ax.set_xlabel('Dias')
     os.makedirs(path, exist_ok=True)
     plt.savefig(path + figname)
@@ -120,9 +120,11 @@ def compare_spectra(serie1, serie2, title, path, figname):
     smo=999
     ci=99
     h1,h2,fff,coef,conf,fase=crospecs(xx1, xx2, ppp, dt, win, smo, ci)
+
     plt.figure(1)
     plt.plot(1./fff/24,coef,'b')
     plt.plot(1./fff/24,conf,'--k')
+    plt.set_xlim([0,40])
     plt.grid()
     plt.title(title)
     os.makedirs(path, exist_ok=True)
