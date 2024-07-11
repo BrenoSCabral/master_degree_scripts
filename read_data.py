@@ -27,6 +27,8 @@ from matplotlib.lines import Line2D
 import matplotlib.ticker as mticker
 from sys import path
 import csv
+from scipy.fft import fft, fftfreq
+
 
 def find_point(name):
     """
@@ -484,7 +486,7 @@ def fill_dataframe(df, t0, tf):
     return df
 
 
-def all_series(files):
+def all_series():
     path_data = '/Users/breno/Documents/Mestrado/resultados/data'
     files = os.listdir(path_data)
     treated = {}
@@ -492,6 +494,8 @@ def all_series(files):
         if file[-1:] != 'v':
             continue
         treated[file] = treat_exported_series(read_exported_series(path_data + '/' + file))
+
+    return treated
 
 
 # essa analise aqui embaixo vale a pena quando eu delimitar o ano e a regiao de interesse
@@ -509,6 +513,8 @@ def all_series(files):
     #     elif state == '0':
     #         ns.append(serie)
     #     plt.close('all')
+
+def avulso(treated):
 
     for serie in treated:        
         nans = treated[serie]['ssh']['1995':].isna().sum()
@@ -570,6 +576,129 @@ def exporta_serie_tratada():
     for serie in treated:
         try:
             treated[serie].index.names = ['data']
-            export_series_year(treated[serie], '2012', serie[:-4], '/Users/breno/Documents/Mestrado/resultados/2012/data')
+            export_series_year(treated[serie], '2009', serie[:-4], '/Users/breno/Documents/Mestrado/resultados/2009/data')
         except Exception:
             continue
+
+def make_histogram(infos):
+    total_dias = []
+    for info in infos:
+        # tem que reamostrar pra dias aqui!!!!
+        dias = pd.date_range(info[-1][0], info[-1][-1], freq='1D')
+        total_dias.append(len(dias))
+        # total_dias.append(len(info[-1]))
+    arr_dias = np.asarray(total_dias)
+
+    # adequar aqui tanto os valores da primeira quanto os valores da terceira
+    # tentativa
+    # a ideia eh ter tipo um zoom das series mais longas
+
+    # mas to achando que aqui ta com muita serie ainda
+
+    # 1st try
+
+    # Filtrar os valores menores que 15
+    d15 = len(arr_dias[arr_dias < 15])
+
+    # Filtrar os valores entre 15 e 30
+    d15_30 = len(arr_dias[(arr_dias >= 15) & (arr_dias < 30)])
+
+    # Filtrar os valores entre 30 e 60
+    d30_60 = len(arr_dias[(arr_dias >= 30) & (arr_dias < 60)])
+
+    # Filtrar os valores entre 60 e 180
+    d60_180 = len(arr_dias[(arr_dias >= 60) & (arr_dias < 180)])
+
+    d365= len(arr_dias[(arr_dias >= 180) & (arr_dias < 365)])
+
+    # Filtrar os valores maiores que 364
+    dmaior_364 = len(arr_dias[arr_dias > 364])
+
+
+    hist_dias = [d15, d15_30, d30_60, d60_180, d365, dmaior_364]
+
+    plt.bar([ '<15', '15 - 30' ,  '30 - 60', '60 - 180', '180 - 365' ,'>=365'], hist_dias)
+    plt.title('Lenght of Series Without Gaps')
+    plt.xlabel('Days')
+    plt.ylabel('Amount of Series')
+
+    plt.grid()
+    plt.plot()
+    plt.savefig('/Users/breno/Documents/Mestrado/fig_dados/no_gaps.png')
+
+
+    # 2nd try
+    d60= len(arr_dias[arr_dias<60])
+    d60_120 = len(arr_dias[(arr_dias >= 60) & (arr_dias < 120)])
+    d120_180 = len(arr_dias[(arr_dias >= 120) & (arr_dias < 180)])
+    d180_365 = len(arr_dias[(arr_dias >= 180) & (arr_dias < 365)])
+    dmaior_364 = len(arr_dias[arr_dias > 364])
+
+    hist_dias = [d60, d60_120, d120_180, d180_365, dmaior_364]
+
+
+    plt.bar([ '<60', '<120' ,  '<180', '<365' ,'>=365'], hist_dias)
+    plt.title('Lenght of Series Without Gaps')
+    plt.xlabel('Days')
+    plt.ylabel('# of Series')
+
+    plt.grid()
+    plt.show()
+
+    # 3rd try
+    d60_120 = len(arr_dias[(arr_dias >= 60) & (arr_dias < 120)])
+    d120_180 = len(arr_dias[(arr_dias >= 120) & (arr_dias < 180)])
+    d180_365 = len(arr_dias[(arr_dias >= 180) & (arr_dias < 365)])
+    dmaior_364 = len(arr_dias[arr_dias > 364])
+
+    hist_dias = [ d60_120, d120_180, d180_365, dmaior_364]
+
+
+    plt.bar([ '60-120' ,  '120-180', '180-365' ,'>=365'], hist_dias)
+    plt.title('Lenght of Series Without Gaps')
+    plt.xlabel('Days')
+    plt.ylabel('Amount of Series')
+
+    plt.grid()
+    plt.savefig('/Users/breno/Documents/Mestrado/fig_dados/no_gaps_zoom.png')
+
+    plt.show()
+
+def example_main():
+    treated = all_series()
+    infos = get_extracted_infos(treated)
+
+def get_spectrum(data, freq):
+    fig = plt.figure(figsize=(14,8))
+    fig.suptitle('Serie medida vs filtrada (Salvador)')
+    ax = fig.add_subplot(111)
+
+    N1 = len(data) # numero de medicoes
+    T1= freq
+    # T1 = 1.0 # frequencia das medicoes (nesse caso = 1 medicao a cada 24h)
+
+    yif1 = fft(data)
+    xif1 = fftfreq(N1,T1)
+    tif1 = 1/xif1
+
+
+    ax.semilogx(tif1, 2.0/N1 * np.abs(yif1), label = 'Medida')
+    # ax.semilogx(tif, 2.0/N * np.abs(yif), label = 'Filtrado')
+
+    # ax.set_xlim(10,20)
+    ax.set_xticks([3, 5, 10, 20, 30, 40]) 
+
+    ax.set_xticklabels([])
+    ax.legend()
+    # ax.set_yticks([])
+
+    # ax.ylim([-0.1, 40])
+    ax.grid()
+
+    ax.set_xticklabels([3, 5, 10, 20, 30, 40])
+
+    ax.set_ylabel('Densidade de Altura de Superfície do Mar por faixa de frequência (m)')
+    ax.set_xlabel('Dias')
+
+    # plt.savefig('/Users/breno/Documents/Mestrado/resultados/2012/figs/compara_espectro_zoom')
+
