@@ -26,7 +26,7 @@ server = False
 if server:
     model_path = '/data3/MOVAR/modelos/REANALISES/'
     data_path = f'/home/bcabral/mestrado/data/{year}/'
-    fig_folder = '/home/bcabral/mestrado/fig/'
+    fig_folder = f'/home/bcabral/mestrado/fig/{year}'
 else:
     data_path  = f'/Users/breno/Documents/Mestrado/resultados/{year}/data/'
     fig_folder = f'/Users/breno/Documents/Mestrado/resultados/{year}/figs'
@@ -57,7 +57,7 @@ def get_data_stats(series, place):
     gen_stat_df.to_csv(f'{fig_folder}/stats/{place}/gen_{place}.csv')
     
 
-def get_correlation_matrix(lat, lon, data, json_path):
+def get_correlation_matrix(lat, lon, data, t0, tf, json_path):
     if os.path.exists(json_path):
         return json_path
     json_dict = {}
@@ -68,7 +68,7 @@ def get_correlation_matrix(lat, lon, data, json_path):
         reanalisys = xr.open_mfdataset(model_path + model + '/SSH/' + str(year)  + '/*.nc')
         reanal_subset = get_model_region(lat, lon, model, reanalisys)
         reanal_subset['ssh'].load()
-        reanal_subset = reanal_subset.sel(time=slice(data.index[0], data.index[-1]))
+        reanal_subset = reanal_subset.sel(time=slice(t0, tf))
 
 
         correlation, latlons= get_correlation(data, reanal_subset, fig_folder)
@@ -109,32 +109,42 @@ def get_reanalisys_stats(data, reanalisys, place, model):
     gen_stat_df = pd.DataFrame(gen_stats, index=['SOMA', 'MÉDIA', 	'DESVPAD', 'MEDIANA', 'MÁX.', 'MÍN']).round(2)
 
     # TODO: acho que seria mais legal juntar todas essas metricas em um so arquivo. Mais facil mexer depois
-    stat_df.to_csv(f'{fig_folder}/stats/{place}/cut/comp_{model}.csv')
-    dep_stat_df.to_csv(f'{fig_folder}/stats/{place}/cut/dep_{model}.csv')
-    gen_stat_df.to_csv(f'{fig_folder}/stats/{place}/cut/gen_{model}.csv')
+    os.makedirs(f'{fig_folder}/stats/{place}/', exist_ok=True)
+    stat_df.to_csv(f'{fig_folder}/stats/{place}/comp_{model}.csv')
+    dep_stat_df.to_csv(f'{fig_folder}/stats/{place}/dep_{model}.csv')
+    gen_stat_df.to_csv(f'{fig_folder}/stats/{place}/gen_{model}.csv')
 
 
 def main():
     for point in os.listdir(data_path):
-        data, lat, lon, data_filt = get_data(point)
+        if point[-1] != 'v':
+            continue
+        data, lat, lon, data_filt = get_data(data_path + point)
+        # ver o que fazer quando eu  tiver nan -> ex imbituba
 
         gplots.plot_time_series(data['ssh'], 'Série Temporal de ' + point[:-4], f'{fig_folder}/ponto_serie/', point[:-4])
-        gplots.plot_spectrum(data, f'Espectro de {point[:-4]}', f'{fig_folder}/spectra/{point[:-4]}/', f'spec_{point[:-4]}')
-        gplots.plot_double_spectrum(data, data_filt, f'Medido vs Filtrado ({point[:-4]})', f'{fig_folder}/spectra/{point[:-4]}/', f'comp_spec_{point[:-4]}')
+        # nomear eixos (cm e data)
+        gplots.plot_spectrum(data['ssh'], f'Espectro de {point[:-4]}', f'{fig_folder}/spectra/{point[:-4]}/', f'spec_{point[:-4]}')
+        # tirar label
+        gplots.plot_double_spectrum(data['ssh'], data_filt, f'Medido vs Filtrado ({point[:-4]})', f'{fig_folder}/spectra/{point[:-4]}/', f'comp_spec_{point[:-4]}')
 
-        get_correlation_matrix(lat, lon, data_filt, f'/home/bcabral/mestrado/{point[:-4]}.json')
+        get_correlation_matrix(lat, lon, data_filt, data.index[0], data.index[-1], f'/home/bcabral/mestrado/{point[:-4]}.json')
         get_data_stats(data_filt, point)
         for model in ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']:
             reanalisys, fil_reanalisys, filt_time = get_reanalisys(point, model)
+            reanalisys = reanalisys * 100 # pasando pra cm
+            fil_reanalisys = fil_reanalisys * 100 # passando pra cm
 
             gplots.plot_spectrum(reanalisys, f'Espectro de {point[:-4]} ({model})', f'{fig_folder}/spectra/{point[:-4]}/', f'spec_{model}', data = False)
+            # ajustar a unidade acima
             gplots.plot_double_spectrum(reanalisys, fil_reanalisys, f'Original vs Filtrado ({point[:-4]} - {model})',
                                         f'{fig_folder}/spectra/{point[:-4]}/',f'comp_spec_{model}', mdata = False)
             
-            gplots.compare_spectra(data, reanalisys, f'Espectro {point[:-4]} vs {model}', f'{fig_folder}/spectra/{point[:-4]}',f'crosspec_{model}')
-            gplots.compare_spectra(data, reanalisys, f'Espectro Filtrado {point[:-4]} vs {model}', f'{fig_folder}/spectra/{point[:-4]}/',f'crosspec_filt_{model}')
+            # gplots.compare_spectra(data, reanalisys, f'Espectro {point[:-4]} vs {model}', f'{fig_folder}/spectra/{point[:-4]}',f'crosspec_{model}')
+            gplots.compare_spectra(data_filt, reanalisys, f'Espectro Filtrado {point[:-4]} vs {model}', f'{fig_folder}/spectra/{point[:-4]}/',f'crosspec_filt_{model}')
 
+            
             gplots.compare_time_series(data_filt, fil_reanalisys, f'{point[:-4]} vs {model}', f'{fig_folder}/series/{point[:-4]}/',f'{model}')
+            # faltam labels e botar na mesma unidade o modelo e o ponto
 
-
-            get_reanalisys_stats(data_filt, fil_reanalisys, point, model)
+            get_reanalisys_stats(data_filt, fil_reanalisys, point[:-4], model)
