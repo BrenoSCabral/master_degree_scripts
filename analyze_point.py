@@ -20,7 +20,7 @@ import general_plots as gplots
 
 # setar variaveis
 # talvez seja melhor botar isso na chamada da funcao, tipo aquele argv que o jonas fez
-year = 2009
+year = 2014
 server = False
 
 if server:
@@ -28,8 +28,10 @@ if server:
     data_path = f'/home/bcabral/mestrado/data/{year}/'
     fig_folder = f'/home/bcabral/mestrado/fig/{year}'
 else:
-    data_path  = f'/Users/breno/Documents/Mestrado/resultados/{year}/data/'
-    fig_folder = f'/Users/breno/Documents/Mestrado/resultados/{year}/figs'
+    data_path  = f'/Users/breno/mestrado/resultados/{year}/data/'
+    fig_folder  = f'/Users/breno/mestrado/resultados/{year}/figs/'
+    # fig_folder = f'/Users/breno/Documents/Mestrado/resultados/{year}/figs'
+    
 
 
 # Tem que testar toda essa brincadeira aqui!
@@ -40,6 +42,21 @@ def get_data(point):
     lat = data['lat'][0]
     lon = data['lon'][0]
 
+
+
+    return data, lat, lon
+
+
+def contar_nans_seguidos(serie):
+    is_nan = serie.isna()
+    shift_is_nan = is_nan.shift(fill_value=False)
+    grupos = (is_nan != shift_is_nan).cumsum()
+    contagem_grupos = is_nan.groupby(grupos).sum()
+    contagem_grupos = contagem_grupos[contagem_grupos > 0]
+    return contagem_grupos
+
+
+def filt_data(data):
     data_low = filtro.filtra_dados(data['ssh'], data.index, 'low', modelo = False)
     # mudar aqui o valor inicial pra pegar diferentes horas
     data_low = data_low[9::24]
@@ -47,7 +64,7 @@ def get_data(point):
 
     data_filt = data_high
 
-    return data, lat, lon, data_filt
+    return data_filt
 
 
 def get_data_stats(series, place):
@@ -119,8 +136,20 @@ def main():
     for point in os.listdir(data_path):
         if point[-1] != 'v':
             continue
-        data, lat, lon, data_filt = get_data(data_path + point)
-        # ver o que fazer quando eu  tiver nan -> ex imbituba
+        
+        data, lat, lon = get_data(data_path + point)
+
+        max_nans = contar_nans_seguidos(data['ssh']).max()
+        if max_nans > 6:
+            continue
+        elif max_nans > 0:
+            data['ssh'] = data['ssh'].interpolate('quadratic')
+
+        if point == 'salvador_2009.csv' or point == 'Fortaleza_2009.csv':
+            data['ssh'] = data['ssh'] *100
+
+        data_filt = filt_data(data)
+
 
         gplots.plot_time_series(data['ssh'], 'Série Temporal de ' + point[:-4], f'{fig_folder}/ponto_serie/', point[:-4])
         # nomear eixos (cm e data)
@@ -135,14 +164,16 @@ def main():
             reanalisys = reanalisys * 100 # pasando pra cm
             fil_reanalisys = fil_reanalisys * 100 # passando pra cm
 
-            gplots.plot_spectrum(reanalisys, f'Espectro de {point[:-4]} ({model})', f'{fig_folder}/spectra/{point[:-4]}/', f'spec_{model}', data = False)
+            gplots.plot_spectrum(reanalisys, f'Espectro de {point[:-4]} ({model})', f'{fig_folder}/spectra/{point[:-4]}/', f'spec_{model}', is_data = False)
             # ajustar a unidade acima
             gplots.plot_double_spectrum(reanalisys, fil_reanalisys, f'Original vs Filtrado ({point[:-4]} - {model})',
-                                        f'{fig_folder}/spectra/{point[:-4]}/',f'comp_spec_{model}', mdata = False)
+                                        f'{fig_folder}/spectra/{point[:-4]}/',f'comp_spec_{model}', is_data = False)
             
             # gplots.compare_spectra(data, reanalisys, f'Espectro {point[:-4]} vs {model}', f'{fig_folder}/spectra/{point[:-4]}',f'crosspec_{model}')
-            gplots.compare_spectra(data_filt, reanalisys, f'Espectro Filtrado {point[:-4]} vs {model}', f'{fig_folder}/spectra/{point[:-4]}/',f'crosspec_filt_{model}')
-
+            gplots.compare_spectra(data_filt, fil_reanalisys, f'Espectro Filtrado {point[:-4]} vs {model}', f'{fig_folder}/spectra/{point[:-4]}/',f'crosspec_filt_{model}')
+            gplots.plot_double_spectrum(data_filt, fil_reanalisys, f'Filtrado Ponto vs Modelo ({point[:-4]} - {model})',
+                                        f'{fig_folder}/spectra/{point[:-4]}/',f'comp_{point[:-4]}_{model}', is_data = False)
+            
             
             gplots.compare_time_series(data_filt, fil_reanalisys, f'{point[:-4]} vs {model}', f'{fig_folder}/series/{point[:-4]}/',f'{model}')
             # faltam labels e botar na mesma unidade o modelo e o ponto
