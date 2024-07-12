@@ -573,10 +573,12 @@ def plot_extracted_series(series, d0, df):
     plt.savefig(f'/Users/breno/Documents/Mestrado/resultados/abrangencia_series_{d0[:4]}_{df[:4]}.png')
 
 def exporta_serie_tratada():
+    treated = all_series()
     for serie in treated:
         try:
             treated[serie].index.names = ['data']
-            export_series_year(treated[serie], '2009', serie[:-4], '/Users/breno/Documents/Mestrado/resultados/2009/data')
+            os.makedirs('/Users/breno/mestrado/resultados/2015/data', exist_ok=True)
+            export_series_year(treated[serie], '2015', serie[:-4], '/Users/breno/mestrado/resultados/2015/data')
         except Exception:
             continue
 
