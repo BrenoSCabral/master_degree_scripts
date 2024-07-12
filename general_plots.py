@@ -24,7 +24,7 @@ def plot_time_series(serie, title, path, figname):
 
 
 # plot de espectro
-def plot_spectrum(seri1, title, path, figname, data=True):
+def plot_spectrum(seri1, title, path, figname, is_data=True):
     
     seri1 = np.asarray(seri1)
     fig = plt.figure(figsize=(14,8))
@@ -32,7 +32,7 @@ def plot_spectrum(seri1, title, path, figname, data=True):
     ax = fig.add_subplot(111)
 
     N1 = len(seri1) # numero de medicoes
-    if data:
+    if is_data:
         T1 = 1.0/24 # frequencia das medicoes (nesse caso = 1 medicao por h)
     else:
         T1 = 1.0
@@ -54,7 +54,7 @@ def plot_spectrum(seri1, title, path, figname, data=True):
     plt.savefig(path + figname)
 
 
-def plot_double_spectrum(data, filtered, title, path, figname, mdata = True):
+def plot_double_spectrum(data, filtered, title, path, figname, is_data = True):
     data = np.asarray(data)
 
 
@@ -63,7 +63,7 @@ def plot_double_spectrum(data, filtered, title, path, figname, mdata = True):
     ax = fig.add_subplot(111)
 
     N1 = len(data) # numero de medicoes
-    if mdata:
+    if is_data:
         T1 = 1.0/24 # frequencia das medicoes (nesse caso = 1 medicao por h)
     else:
         T1 = 1.0
@@ -115,18 +115,20 @@ def compare_spectra(serie1, serie2, title, path, figname):
     xx1=serie1
     xx2=serie2
     ppp=len(xx1)
-    dt=1#horario
+    dt=24#diario
     win=2
     smo=999
     ci=99
     h1,h2,fff,coef,conf,fase=crospecs(xx1, xx2, ppp, dt, win, smo, ci)
 
-    plt.figure(1)
+    # plt.figure(1)
+    fig = plt.figure(figsize=(8,12))
     plt.plot(1./fff/24,coef,'b')
     plt.plot(1./fff/24,conf,'--k')
-    plt.set_xlim([0,40])
+    plt.xlim([0,40])
     plt.grid()
     plt.title(title)
     os.makedirs(path, exist_ok=True)
+    plt.tight_layout()
     plt.savefig(path + figname)
 
