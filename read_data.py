@@ -544,15 +544,57 @@ def get_extracted_infos(series):
     for serie in series:
         dfs = adjindex(series[serie])
         for d in dfs:
-            infos.append((d['lat'][0], d['lon'][0], d.index))
+            infos.append((d['lat'][0], d['lon'][0], d.index, serie))
     return infos
 
 
+## NAO FUNCIONOU!
+
+def interpolate_nans(df, n):
+    mask = df.copy()
+    grp = ((mask.notnull() != mask.shift().notnull()).cumsum())
+    grp['ones'] = 1
+
+    mask['ssh'] = (grp.groupby('ssh')['ones'].transform('count') < n) | df['ssh'].notnull()
+    # int_df = df.interpolate().bfill()[mask]
+    int_df = df.interpolate('quadratic')[mask['ssh']]
+    int_df = fill_dataframe(int_df, int_df.index[0], int_df.index[-1])
+    return int_df
+
+def interp_adjindex(df):
+    df = interpolate_nans(df, 6)
+    dfs= [df.reset_index(drop=False) for g,df in df.dropna().groupby(df['ssh'].isna().cumsum())]
+    dfs_adj = []
+    for df in dfs:
+        df = df.rename({'index':'data'}, axis='columns')
+        df.index = df['data']
+        df = df.drop(columns=['data'])
+
+        dfs_adj.append(df)
+    return dfs_adj
+
+### NAO FUNCIONOU!
+
+def sep_series(series):
+    s_series = {}
+    for serie in series:
+        dfs = adjindex(series[serie])
+        counter = 0
+        for d in dfs:
+            s_series[serie.split('.')[0] + str(counter)] = d
+            counter +=1
+    return s_series
+
+
 def plot_extracted_series(series, d0, df):
-    fig, ax = plt.subplots(figsize=(10, 15))
+    # fig, ax = plt.subplots(figsize=(10, 15))
+
+    fig, ax = plt.subplots(figsize=(5, 5))
     for serie in series:
         datas = serie[2]
         lat = serie[0]
+        if lat > -20:
+            continue
 
         if datas[-1] < pd.Timestamp(d0):
             continue
@@ -564,13 +606,16 @@ def plot_extracted_series(series, d0, df):
 
 
         ax.hlines(y=lat, xmin=data_i, xmax=datas[-1])
-    
-    plt.xlim([pd.Timestamp(d0), pd.Timestamp(df)])
 
+
+    plt.xlim([pd.Timestamp(d0), pd.Timestamp(df)])
     plt.grid()
+    plt.show()
+
 
     plt.tight_layout()
-    plt.savefig(f'/Users/breno/Documents/Mestrado/resultados/abrangencia_series_{d0[:4]}_{df[:4]}.png')
+    plt.savefig(f'/Users/breno/mestrado/CPAM/figs/data_mets/data_spread.png')
+
 
 def exporta_serie_tratada():
     treated = all_series()
@@ -581,6 +626,7 @@ def exporta_serie_tratada():
             export_series_year(treated[serie], '2015', serie[:-4], '/Users/breno/mestrado/resultados/2015/data')
         except Exception:
             continue
+
 
 def make_histogram(infos):
     total_dias = []
@@ -666,9 +712,11 @@ def make_histogram(infos):
 
     plt.show()
 
+
 def example_main():
     treated = all_series()
     infos = get_extracted_infos(treated)
+
 
 def get_spectrum(data, freq):
     fig = plt.figure(figsize=(14,8))
