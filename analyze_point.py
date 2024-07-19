@@ -7,7 +7,7 @@ import sys
 import pandas as pd
 
 # my files
-from read_data import read_exported_series
+from read_data import read_exported_series, treat_exported_series
 from model_data import get_model_region, get_correlation
 from read_reanalisys import set_reanalisys_dims
 import filtro
@@ -20,8 +20,8 @@ import general_plots as gplots
 
 # setar variaveis
 # talvez seja melhor botar isso na chamada da funcao, tipo aquele argv que o jonas fez
-year = 2014
-server = False
+year = 2012
+server = True
 
 if server:
     model_path = '/data3/MOVAR/modelos/REANALISES/'
@@ -100,13 +100,13 @@ def get_correlation_matrix(lat, lon, data, t0, tf, json_path):
         json.dump(json_dict, f)
 
 
-def get_reanalisys(point, model):
+def get_reanalisys(point, model, di, df):
     point_info = json.load(open(f'/home/bcabral/mestrado/{point[:-4]}.json'))
-
     reanalisys = xr.open_mfdataset(model_path + model + '/SSH/' + str(year)  + '/*.nc')
     reanalisys = set_reanalisys_dims(reanalisys, model)
     latlon = point_info[model]
     model_series = reanalisys.sel(latitude=latlon[0], longitude=latlon[1], method='nearest')
+    model_series = model_series.sel(time=slice(di, df))
     mod_ssh = model_series['ssh'].values
     mod_time = model_series['time'].values
     mod_band = filtro.filtra_dados(mod_ssh, mod_time, 'band', modelo = True)
@@ -133,11 +133,16 @@ def get_reanalisys_stats(data, reanalisys, place, model):
 
 
 def main():
+    # se os warning tiverem enchendo mto o saco
+    import warnings
+    warnings.filterwarnings('ignore')
     for point in os.listdir(data_path):
         if point[-1] != 'v':
             continue
-        
+
         data, lat, lon = get_data(data_path + point)
+        if len(data) > 10000:
+            data = treat_exported_series(read_exported_series(data_path + point))
 
         max_nans = contar_nans_seguidos(data['ssh']).max()
         if max_nans > 6:
@@ -145,10 +150,14 @@ def main():
         elif max_nans > 0:
             data['ssh'] = data['ssh'].interpolate('quadratic')
 
-        if point == 'salvador_2009.csv' or point == 'Fortaleza_2009.csv':
+        if data['ssh'].max() < 2.0:
+            # mudar essa funcao aqui. Pegar o valor maximo da serie e se ele for menor que n,
+            # multiplicar por 100
             data['ssh'] = data['ssh'] *100
 
         data_filt = filt_data(data)
+
+        print('OK ' + point)
 
 
         gplots.plot_time_series(data['ssh'], 'Série Temporal de ' + point[:-4], f'{fig_folder}/ponto_serie/', point[:-4])
@@ -160,7 +169,9 @@ def main():
         get_correlation_matrix(lat, lon, data_filt, data.index[0], data.index[-1], f'/home/bcabral/mestrado/{point[:-4]}.json')
         get_data_stats(data_filt, point)
         for model in ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']:
-            reanalisys, fil_reanalisys, filt_time = get_reanalisys(point, model)
+            print(model)
+            reanalisys, fil_reanalisys, filt_time = get_reanalisys(point, model, data.index[0], data.index[-1])
+            
             reanalisys = reanalisys * 100 # pasando pra cm
             fil_reanalisys = fil_reanalisys * 100 # passando pra cm
 
