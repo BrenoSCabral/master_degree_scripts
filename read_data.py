@@ -715,6 +715,24 @@ def make_histogram(infos):
 
 def example_main():
     treated = all_series()
+    series = {}
+    for serie in treated:
+        if treated[serie]['lat'][0] > -20:
+            continue
+        if treated[serie].index[-1] < pd.Timestamp("1980"):
+            continue
+        series[serie] = treated[serie]
+    
+    sep_serie = sep_series(series)
+
+    sel_series = {k: v for k, v in sep_serie.items() if len(v) >= 24*30*6}
+
+
+    for serie in sep_serie:
+        if len(sep_serie[serie]) < 24*30*6: # 6 meses
+            del sep_serie[serie]
+
+
     infos = get_extracted_infos(treated)
 
 
@@ -751,4 +769,3 @@ def get_spectrum(data, freq):
     ax.set_xlabel('Dias')
 
     # plt.savefig('/Users/breno/Documents/Mestrado/resultados/2012/figs/compara_espectro_zoom')
-
