@@ -4,15 +4,15 @@ import matplotlib.pyplot as plt
 import os
 
 
-def passa_baixa(modelo, plot, fig_folder):
+def passa_baixa(xdays, plot, fig_folder):
     # vai ser aplicado em dois passos pra mim: primeior passa baixa c freq horaria
     # e depois passa alta c freq diaria
-    if modelo == False:
-        dt = 1/24  # Frequência de amostragem (1 hora)
-        pesos = 10
-    else:
-        dt = 1
-        pesos = 44
+    # OTIMIZADO PRA DADOS HORARIOS
+    dt = xdays  # Frequência de amostragem (1 hora)
+    pesos = 10
+    # else:
+    #     dt = 1
+    #     pesos = 44
     periodo_min = 3  # Período mínimo em dias
     cutoff_max = 1 / periodo_min
     fn = 1/(2*dt) # frequencia de Nyquist
@@ -27,14 +27,14 @@ def passa_baixa(modelo, plot, fig_folder):
     return (b,a)
 
 
-def passa_banda(modelo, plot, fig_folder):
+def passa_banda(xdays, plot, fig_folder):
     # Filtragem passa-banda entre 3 e 30 dias
-    if modelo == False:
-        dt = 1/24  # Frequência de amostragem (1 hora)
-        pesos = 4
-    else:
-        dt = 1
-        pesos = 15
+    # OTIMIZADO PARA DADOS DIARIOS
+    dt = xdays  # Frequência de amostragem (1 hora)
+    pesos = 4
+    # else:
+    #     dt = 1
+    #     pesos = 15
     periodo_min = 3  # Período mínimo em dias
     periodo_max = 30  # Período máximo em dias
     cutoff_max = 1 / periodo_min
@@ -74,11 +74,17 @@ def aplica_filtro(b,a, nivel_mar, plot=False, tempo=None, nome_serie=None, fig_f
     return nivel_mar_filtrado
 
 
-def filtra_dados(nivel_mar, tempo,  metodo, modelo = False, plot=False, fig_folder=None, nome_serie=None):
+def filtra_dados(nivel_mar, tempo,  metodo, modelo = False, plot=False, fig_folder=None, nome_serie=None, x_days=None):
+    if x_days == None:
+        if modelo == False:
+            x_days = 1/24
+        else:
+            x_days = 1
+    
     if metodo ==  'band':
-        b, a = passa_banda(modelo, plot, fig_folder)
+        b, a = passa_banda(x_days, plot, fig_folder)
     elif metodo == 'low':
-        b, a = passa_baixa(modelo, plot, fig_folder)
+        b, a = passa_baixa(x_days, plot, fig_folder)
     elif metodo == 'high':
         b, a = passa_alta(plot, fig_folder)
 
