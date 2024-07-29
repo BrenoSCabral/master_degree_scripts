@@ -303,13 +303,13 @@ filtered_data = datetime_index[datetime_index.hour == 12]
 sel_series = get_available_data()
 
 for serie in sel_series:
-    if serie == 'TIPLAMm0' or serie == 'Imbituba_2001_20074' or serie == 'Imbituba_2001_20075' \
-        or serie == 'Imbituba_2001_200719' or serie =='TERMINAL PORTUÁRIO DA PONTA DO FÉLIXm0' \
-        or serie =='ubatuba22' or serie=='ubatuba34' or serie=='TEPORTIm0' or serie=='Ubatuba_gloss22'\
-        or serie =='Ubatuba_gloss34' or serie == 'BARRA DE PARANAGUÁ - CANAL DA GALHETAm0'\
-        or serie=='PORTO DE PARANAGUÁ - CAIS OESTEm0' or serie=='ilha_fiscal8' or serie=='ilha_fiscal10'\
-        or serie == 'ilha_fiscal11': # ja fiz
-        continue
+    # if serie == 'TIPLAMm0' or serie == 'Imbituba_2001_20074' or serie == 'Imbituba_2001_20075' \
+    #     or serie == 'Imbituba_2001_200719' or serie =='TERMINAL PORTUÁRIO DA PONTA DO FÉLIXm0' \
+    #     or serie =='ubatuba22' or serie=='ubatuba34' or serie=='TEPORTIm0' or serie=='Ubatuba_gloss22'\
+    #     or serie =='Ubatuba_gloss34' or serie == 'BARRA DE PARANAGUÁ - CANAL DA GALHETAm0'\
+    #     or serie=='PORTO DE PARANAGUÁ - CAIS OESTEm0' or serie=='ilha_fiscal8' or serie=='ilha_fiscal10'\
+    #     or serie == 'ilha_fiscal11': # ja fiz
+    #     continue
     print(f'fazendo {serie}')
     data = sel_series[serie]
     data_point = (data['lat'][0], data['lon'][0])
@@ -496,9 +496,11 @@ for serie in sel_series:
 # v10a = v10_ocean.sel(lat=lat, lon=lon, method='nearest').values # testando pra um ponto
 # fv10 = filt_wind(v10a, data)
 
-    lat = -40
-    lon = -57
+    # lat = -40
+    # lon = -57
 
+    lat = -65
+    lon = -49
     # lat = pts_max[0]
     # lon = pts_max[1]
     serie1 = data_filt
@@ -517,7 +519,7 @@ for serie in sel_series:
     plt.plot(1./fff/24,conf,'--k')
     plt.xlim([0,40])
     plt.grid()
-    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/ped/' + serie + '.png')
+    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/arg.png')
 
 
     lat = pts_max[0]
