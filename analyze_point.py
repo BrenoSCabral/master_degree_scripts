@@ -37,8 +37,8 @@ if server:
     
 
 
-def get_all_available_data():
-    treated = all_series()
+def get_all_available_data(path_data = '/home/bcabral/mestrado/data'):
+    treated = all_series(path_data)
     series = {}
     checked_series = {}
     for serie in treated:

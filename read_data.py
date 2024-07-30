@@ -486,8 +486,8 @@ def fill_dataframe(df, t0, tf):
     return df
 
 
-def all_series():
-    path_data = '/Users/breno/Documents/Mestrado/resultados/data'
+def all_series(path_data):
+    # path_data = '/Users/breno/Documents/Mestrado/resultados/data'
     files = os.listdir(path_data)
     treated = {}
     for file in files:
