@@ -189,7 +189,7 @@ def get_reanalisys(point, model, di, df, years):
     mod_time = model_series['time'].values
     mod_band = filtro.filtra_dados(mod_ssh, mod_time, 'band', modelo = True)
 
-    return mod_ssh, mod_band, mod_time
+    return reanalisys, mod_ssh, mod_band, mod_time
 
 
 def get_reanalisys_stats(data, reanalisys, place, model):
@@ -217,70 +217,86 @@ def main():
     
     all_data = get_all_available_data() # TODO: Precisa mudar aqui de H pra h (deprecated)
 
+    erros = {}
+
     for point in all_data:
-        data = all_data[point]
-        if data['ssh'].max() < 1: # passando a unidade que creio ser m para cm
-            data['ssh'] = data['ssh'] * 100
-        lat, lon = data['lat'][0], data['lon'][0]
-        data_filt = filt_data(data)
+        try:
+            print('COMECANDO ' + point)
+            # parou no quarto ponto
+            data = all_data[point]
+            if data['ssh'].max() < 1: # passando a unidade que creio ser m para cm
+                data['ssh'] = data['ssh'] * 100
+            lat, lon = data['lat'][0], data['lon'][0]
+            data_filt = filt_data(data)
 
-    # for point in os.listdir(data_path):
-    #     if point[-1] != 'v':
-    #         continue
+        # for point in os.listdir(data_path):
+        #     if point[-1] != 'v':
+        #         continue
 
-    #     data, lat, lon = get_data(data_path + point)
-    #     if len(data) > 10000:
-    #         data = treat_exported_series(read_exported_series(data_path + point))
+        #     data, lat, lon = get_data(data_path + point)
+        #     if len(data) > 10000:
+        #         data = treat_exported_series(read_exported_series(data_path + point))
 
-    #     max_nans = contar_nans_seguidos(data['ssh']).max()
-    #     if max_nans > 6:
-    #         continue
-    #     elif max_nans > 0:
-    #         data['ssh'] = data['ssh'].interpolate('quadratic')
+        #     max_nans = contar_nans_seguidos(data['ssh']).max()
+        #     if max_nans > 6:
+        #         continue
+        #     elif max_nans > 0:
+        #         data['ssh'] = data['ssh'].interpolate('quadratic')
 
-    #     if data['ssh'].max() < 2.0:
-    #         # mudar essa funcao aqui. Pegar o valor maximo da serie e se ele for menor que n,
-    #         # multiplicar por 100
-    #         data['ssh'] = data['ssh'] *100
+        #     if data['ssh'].max() < 2.0:
+        #         # mudar essa funcao aqui. Pegar o valor maximo da serie e se ele for menor que n,
+        #         # multiplicar por 100
+        #         data['ssh'] = data['ssh'] *100
 
-    #     data_filt = filt_data(data)
+        #     data_filt = filt_data(data)
 
-    #     print('OK ' + point)
+        #     print('OK ' + point)
 
 
-        gplots.plot_time_series(data['ssh'], 'Série Temporal de ' + point, f'{fig_folder}/ponto_serie/', point)
-        # nomear eixos (cm e data)
-        gplots.plot_spectrum(data['ssh'], f'Espectro de {point}', f'{fig_folder}/spectra/{point}/', f'spec_{point}')
-        # tirar label
-        gplots.plot_double_spectrum(data['ssh'], data_filt, f'Medido vs Filtrado ({point})', f'{fig_folder}/spectra/{point}/', f'comp_spec_{point}')
+            gplots.plot_time_series(data['ssh'], 'Série Temporal de ' + point, f'{fig_folder}/ponto_serie/', point)
+            # nomear eixos (cm e data)
+            gplots.plot_spectrum(data['ssh'], f'Espectro de {point}', f'{fig_folder}/spectra/{point}/', f'spec_{point}')
+            # tirar label
+            gplots.plot_double_spectrum(data['ssh'], data_filt, f'Medido vs Filtrado ({point})', f'{fig_folder}/spectra/{point}/', f'comp_spec_{point}')
 
-        get_correlation_matrix(lat, lon, data_filt, data.index[0], data.index[-1], f'/home/bcabral/mestrado/{point}.json',
-                               range(data.index[0].year, data.index[-1].year +1))
-        get_data_stats(data_filt, point)
-        for model in ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']:
-            data_filt_m = data_filt
-            print(model)
-            reanalisys, fil_reanalisys, filt_time = get_reanalisys(point, model, data.index[0],
-                                                                   data.index[-1], range(data.index[0].year, data.index[-1].year +1))
-            if pd.to_datetime(reanalisys['time'].values[0]).hour != 0:
-                data_filt_m = filt_data(data, hour = pd.to_datetime(reanalisys['time'].values[0]).hour -3)
+            # TODO: em teoria teria que mexer aqui tbm pra ter o mesmo horario no dado e no modelo
+            get_correlation_matrix(lat, lon, data_filt, data.index[0], data.index[-1], f'/home/bcabral/mestrado/{point}.json',
+                                range(data.index[0].year, data.index[-1].year +1))
+            get_data_stats(data_filt, point)
+            for model in ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']:
+                data_filt_m = data_filt
+                print('FAZENDO ESTUDO DO ' + model)
+                rea_brute, reanalisys, fil_reanalisys, filt_time = get_reanalisys(point, model, data.index[0],
+                                                                    data.index[-1], range(data.index[0].year, data.index[-1].year +1))
+                if pd.to_datetime(rea_brute['time'].values[0]).hour != 0:
+                    data_filt_m = filt_data(data, sel_hour = pd.to_datetime(rea_brute['time'].values[0]).hour -3)
 
-            
-            reanalisys = reanalisys * 100 # pasando pra cm
-            fil_reanalisys = fil_reanalisys * 100 # passando pra cm
+                
+                reanalisys = reanalisys * 100 # pasando pra cm
+                fil_reanalisys = fil_reanalisys * 100 # passando pra cm
 
-            gplots.plot_spectrum(reanalisys, f'Espectro de {point} ({model})', f'{fig_folder}/spectra/{point}/', f'spec_{model}', is_data = False)
-            # ajustar a unidade acima
-            gplots.plot_double_spectrum(reanalisys, fil_reanalisys, f'Original vs Filtrado ({point} - {model})',
-                                        f'{fig_folder}/spectra/{point}/',f'comp_spec_{model}', is_data = False)
-            
-            # gplots.compare_spectra(data, reanalisys, f'Espectro {point} vs {model}', f'{fig_folder}/spectra/{point}',f'crosspec_{model}')
-            gplots.compare_spectra(data_filt_m, fil_reanalisys, f'Espectro Filtrado {point} vs {model}', f'{fig_folder}/spectra/{point}/',f'crosspec_filt_{model}')
-            gplots.plot_double_spectrum(data_filt_m, fil_reanalisys, f'Filtrado Ponto vs Modelo ({point} - {model})',
-                                        f'{fig_folder}/spectra/{point}/',f'comp_{point}_{model}', is_data = False)
-            
-            
-            gplots.compare_time_series(data_filt_m, fil_reanalisys, f'{point} vs {model}', f'{fig_folder}/series/{point}/',f'{model}')
-            # faltam labels e botar na mesma unidade o modelo e o ponto
+                gplots.plot_spectrum(reanalisys, f'Espectro de {point} ({model})', f'{fig_folder}/spectra/{point}/', f'spec_{model}', is_data = False)
+                # ajustar a unidade acima
+                gplots.plot_double_spectrum(reanalisys, fil_reanalisys, f'Original vs Filtrado ({point} - {model})',
+                                            f'{fig_folder}/spectra/{point}/',f'comp_spec_{model}', is_data = False)
+                
+                # gplots.compare_spectra(data, reanalisys, f'Espectro {point} vs {model}', f'{fig_folder}/spectra/{point}',f'crosspec_{model}')
+                gplots.compare_spectra(data_filt_m, fil_reanalisys, f'Espectro Filtrado {point} vs {model}', f'{fig_folder}/spectra/{point}/',f'crosspec_filt_{model}')
+                gplots.plot_double_spectrum(data_filt_m, fil_reanalisys, f'Filtrado Ponto vs Modelo ({point} - {model})',
+                                            f'{fig_folder}/spectra/{point}/',f'comp_{point}_{model}', is_data = False)
+                
+                
+                gplots.compare_time_series(data_filt_m, fil_reanalisys, f'{point} vs {model}', f'{fig_folder}/series/{point}/',f'{model}')
+                # faltam labels e botar na mesma unidade o modelo e o ponto
 
-            get_reanalisys_stats(data_filt_m, fil_reanalisys, point, model)
+                get_reanalisys_stats(data_filt_m, fil_reanalisys, point, model)
+        
+        except Exception as e:
+            erros[point] = 'ERRO'
+            print(len('ERRO EM {point}')*'!')
+            print(len('ERRO EM {point}')//4*'ERRO ')
+            print(f'ERRO EM {point}')
+            print(len('ERRO EM {point}')*'!')
+            print(len('ERRO EM {point}')//4*'ERRO ')
+
+    pd.DataFrame(erros).to_csv('/home/bcabral/mestrado/erros.csv')
