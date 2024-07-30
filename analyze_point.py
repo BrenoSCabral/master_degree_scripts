@@ -153,7 +153,7 @@ def get_correlation_matrix(lat, lon, data, t0, tf, json_path, years):
             
         reanalisys = xr.concat(list(reanal.values()), dim="time")
 
-        reanal_subset = get_model_region(lat, lon, model, reanalisys)
+        reanal_subset = get_model_region(lat, lon, model, reanalisys, set_dims = False)
         reanal_subset['ssh'].load()
         reanal_subset = reanal_subset.sel(time=slice(t0, tf))
 

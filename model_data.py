@@ -13,9 +13,10 @@ import filtro
 import json
 
 
-def get_model_region(lat, lon, model_name, reanalisys):
+def get_model_region(lat, lon, model_name, reanalisys, set_dims = True):
     # reanalisys = xr.open_mfdataset(model_path + '/*SSH*.nc')
-    reanalisys = set_reanalisys_dims(reanalisys, model_name)
+    if set_dims:
+        reanalisys = set_reanalisys_dims(reanalisys, model_name)
 
     lat_idx = np.abs(reanalisys['latitude'] - lat).argmin().item()
     lon_idx = np.abs(reanalisys['longitude'] - lon).argmin().item()
