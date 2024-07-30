@@ -9,6 +9,10 @@ sys.path.append(
 )
 from crosspecs import crospecs
 
+# adicionei isso aqui pra fazer funcionar no servidor, em casa nao sei
+import matplotlib
+matplotlib.use('Agg')
+
 
 # plot de serie temporal
 def plot_time_series(serie, title, path, figname):

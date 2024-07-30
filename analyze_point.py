@@ -215,7 +215,7 @@ def main():
     import warnings
     warnings.filterwarnings('ignore')
     
-    all_data = get_all_available_data()
+    all_data = get_all_available_data() # TODO: Precisa mudar aqui de H pra h (deprecated)
 
     for point in all_data:
         data = all_data[point]
