@@ -23,7 +23,7 @@ from crosspecs import crospecs
 import math
 
 def get_available_data():
-    treated = all_series()
+    treated = all_series('/Users/breno/Documents/Mestrado/resultados/data')
     series = {}
     checked_series = {}
     for serie in treated:
@@ -142,7 +142,7 @@ def set_wind_reanalisys_dims(reanalisys, name):
         xarray Dataset: Dataset of the reanalisys data with corrected dimensions names
     '''
     name = name.upper()
-    if name == 'ERA-5':
+    if name == 'ERA5':
         reanalisys = reanalisys.rename({'latitude': 'lat', 'longitude': 'lon'})
     elif name == 'MERRA2':
         reanalisys = reanalisys.rename({'V10M':'v10'})
@@ -218,13 +218,48 @@ def plot_mask(mask):
     cbar = plt.colorbar(contour, ax=ax, orientation='vertical', shrink=0.5, label='Máscara de Terra/Água')
 
     # Configurar limites do mapa
-    ax.set_extent([-70, -60, -52.5, -42.5], crs=ccrs.PlateCarree())
-
+    # ax.set_extent([-70, -60, -52.5, -42.5], crs=ccrs.PlateCarree())
+    ax.set_extent([-70, -60, -40,  -40])
     # Título do mapa
     ax.set_title('Máscara de Terra/Água', fontsize=15)
 
-    plt.show()
+    # plt.show()
 
+
+def plot_points(pts):
+    coord = ccrs.PlateCarree()
+
+    fig = plt.figure(figsize=(6, 6))
+    ax = fig.add_subplot(111, projection=coord)
+
+
+    ax.add_feature(cfeature.LAND, facecolor='lightgray')
+    ax.add_feature(cfeature.BORDERS, zorder=10)
+    ax.add_feature(cfeature.COASTLINE, zorder=10)
+
+    # ax.set_extent([-40, 10, -50, -30], crs=coord)
+
+    for point in pts:
+        lat = pts[point]['lat'][0]
+        lon =  pts[point]['lon'][0]
+        plt.plot(lon, lat,
+                color='red', linewidth=2, marker='P',
+                transform=ccrs.PlateCarree()
+                )  
+    lons = np.arange(-70, -20, 5)
+    lats = np.arange(-50, 10, 5)
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), linewidth=.5, color='black', alpha=0.5, linestyle='--', draw_labels=True)
+    gl.xlabels_top = False
+    gl.ylabels_left = False
+    gl.ylabels_right=True
+    gl.xlines = True
+    gl.xlocator = mticker.FixedLocator(lons)
+    gl.ylocator = mticker.FixedLocator(lats)
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+
+    plt.tight_layout()
+    plt.savefig(f'/Users/breno/mestrado/CPAM/figs/data_mets/data_points.png')
 
 models_path = '/Users/breno/mestrado/CPAM/models/'
 
@@ -234,15 +269,15 @@ models = ['ERA-5', 'MERRA2', 'NCEP']
 ## import my reanalisys
 # era_path = models_path + '/ERA-5/'
 
-# reanalera = xr.open_mfdataset(era_path+'*.nc')
+reanalera = xr.open_mfdataset(models_path + '/ERA5/'+'*.nc')
 # reanalmerra = xr.open_mfdataset(models_path + '/MERRA2/'+'*.nc')
-reanalncep = xr.open_mfdataset(models_path + '/NCEP/'+'*.nc')
+# reanalncep = xr.open_mfdataset(models_path + '/NCEP/'+'*.nc')
 
 # reanal = reanalera
 # model = 'ERA-5'
 
-reanal = reanalncep
-model = 'NCEP'
+reanal = reanalera
+model = 'ERA5'
 ## set its dimensions names
 
 reanal = set_wind_reanalisys_dims(reanal, model)
@@ -303,13 +338,13 @@ filtered_data = datetime_index[datetime_index.hour == 12]
 sel_series = get_available_data()
 
 for serie in sel_series:
-    # if serie == 'TIPLAMm0' or serie == 'Imbituba_2001_20074' or serie == 'Imbituba_2001_20075' \
-    #     or serie == 'Imbituba_2001_200719' or serie =='TERMINAL PORTUÁRIO DA PONTA DO FÉLIXm0' \
-    #     or serie =='ubatuba22' or serie=='ubatuba34' or serie=='TEPORTIm0' or serie=='Ubatuba_gloss22'\
-    #     or serie =='Ubatuba_gloss34' or serie == 'BARRA DE PARANAGUÁ - CANAL DA GALHETAm0'\
-    #     or serie=='PORTO DE PARANAGUÁ - CAIS OESTEm0' or serie=='ilha_fiscal8' or serie=='ilha_fiscal10'\
-    #     or serie == 'ilha_fiscal11': # ja fiz
-    #     continue
+    if serie == 'TIPLAMm0' or serie == 'Imbituba_2001_20074' or serie == 'Imbituba_2001_20075' \
+        or serie == 'Imbituba_2001_200719' or serie =='TERMINAL PORTUÁRIO DA PONTA DO FÉLIXm0' \
+        or serie =='ubatuba22' or serie=='ubatuba34' or serie=='TEPORTIm0' or serie=='Ubatuba_gloss22'\
+        or serie =='Ubatuba_gloss34': # or serie == 'BARRA DE PARANAGUÁ - CANAL DA GALHETAm0'\
+        # or serie=='PORTO DE PARANAGUÁ - CAIS OESTEm0' or serie=='ilha_fiscal8' or serie=='ilha_fiscal10'\
+        # or serie == 'ilha_fiscal11': # ja fiz
+        continue
     print(f'fazendo {serie}')
     data = sel_series[serie]
     data_point = (data['lat'][0], data['lon'][0])
@@ -325,14 +360,19 @@ for serie in sel_series:
     # aqui eu fiz um data_array com os resultados filtrados
     # tenho que aprender o apply_ufunc, que deve facilitar bastante a vida aqui.
 
-    # corte para a reanalise do ncep
-    lat_range = slice(-10, -52.5)
-    # lon_range = slice(-70, -55) # in 0 to 360
-    lon_range= slice(convert_lon(-70), convert_lon(-30)) # in 0 to 360
+    # corte para a reanalise 
+    # lat_range = slice(-10, -52.5)
+    lat_range = slice(-20,-50)
+    lon_range = slice(-70,-40)
+    # lon_range = slice(-70, -30) # in 0 to 360
+    # precisa mudar esse pro NCEp
+    # lon_range= slice(convert_lon(-70), convert_lon(-30)) # in 0 to 360
+    
     v10_ocean = v10_ocean.sel(lat=lat_range, lon=lon_range)
     lon_original = v10_ocean['lon'].values
-    lon_convertido = convert_longitude_360_to_180(lon_original)
-    v10_ocean = v10_ocean.assign_coords(lon=lon_convertido)
+    # precisa mudar esse pro NCEP
+    # lon_convertido = convert_longitude_360_to_180(lon_original)
+    # v10_ocean = v10_ocean.assign_coords(lon=lon_convertido)
 
 
     lat_vals = v10_ocean['lat'].values
@@ -424,23 +464,25 @@ for serie in sel_series:
 
 
     abss_da = xr.DataArray(
-        abss_data,
+        abss_data/abss_data.max(),
         coords=[lat_vals, lon_vals],
         dims=["lat", "lon"],
-        name="abss"
+        # name="abss"
+        name = 'Coerência Integrada Normalizada'
     )
 
     sups_da = xr.DataArray(
-        sups_data,
+        sups_data/sups_data.max(),
         coords=[lat_vals, lon_vals],
         dims=["lat", "lon"],
-        name="sups"
+        name='Coerência Superior à Confiança Estatística Integrada Normalizada'
     )
     # Plotar o colormap de abss
 
     # Plotar o colormap de abss em um mapa
     fig, ax = plt.subplots(figsize=(12, 8), subplot_kw={'projection': ccrs.PlateCarree()})
-    abss_da.plot(ax=ax, cmap="viridis", transform=ccrs.PlateCarree())
+    cmap = abss_da.plot(ax=ax, cmap="viridis", transform=ccrs.PlateCarree())
+    cmap.set_label(' ')
     ax.add_feature(cfeature.COASTLINE)
     ax.add_feature(cfeature.BORDERS)
     ax.add_feature(cfeature.LAND, edgecolor='black')
@@ -449,7 +491,16 @@ for serie in sel_series:
     ax.add_feature(cfeature.RIVERS, edgecolor='black')
 
     ax.plot(data_point[1], data_point[0], 'ro', markersize=10,
-            transform=ccrs.PlateCarree(), label=f'Ponto de comparação')
+            transform=ccrs.PlateCarree(), label=f'Ponto de dado')
+    
+    ax.plot(pta_max[1], pta_max[0], 'ro', markersize=10,
+            transform=ccrs.PlateCarree(), label=f'Ponto de Máximo', color = 'green')
+    
+    ax.plot(-57, -40, 'ro', markersize=10,
+            transform=ccrs.PlateCarree(), label=f'Ponto Freitas et al. 2021', color = 'orange')
+    
+    ax.plot(-65, -49, 'ro', markersize=10,
+            transform=ccrs.PlateCarree(), label=f'Ponto Argentina', color = 'blue')
 
     ax.legend(loc='lower right')
 
@@ -457,10 +508,11 @@ for serie in sel_series:
     gl.top_labels = False
     gl.right_labels = False
 
-    ax.set_title("Colormap de abss")
-
+    # ax.set_title("Colormap de abss")
     # plt.show()
-    plt.savefig('/Users/breno/mestrado/CPAM/figs/corr_maps/ncep/abs/' + serie + '_abs.png')
+
+    # # plt.show()
+    plt.savefig('/Users/breno/mestrado/CPAM/figs/corr_maps/era5/abs/' + serie + '_abs.png')
 
 
     # Plotar o colormap de sups em um mapa
@@ -474,7 +526,16 @@ for serie in sel_series:
     ax.add_feature(cfeature.RIVERS, edgecolor='black')
 
     ax.plot(data_point[1], data_point[0], 'ro', markersize=10,
-            transform=ccrs.PlateCarree(), label=f'Ponto de comparação')
+            transform=ccrs.PlateCarree(), label=f'Ponto de dado')
+    
+    ax.plot(pts_max[1], pts_max[0], 'ro', markersize=10,
+            transform=ccrs.PlateCarree(), label=f'Ponto de Máximo', color = 'green')
+    
+    ax.plot(-57, -40, 'ro', markersize=10,
+            transform=ccrs.PlateCarree(), label=f'Ponto Freitas et al. 2021', color = 'orange')
+    
+    ax.plot(-65, -49, 'ro', markersize=10,
+            transform=ccrs.PlateCarree(), label=f'Ponto Argentina', color = 'blue')
 
     ax.legend(loc='lower right')
 
@@ -482,11 +543,13 @@ for serie in sel_series:
     gl.top_labels = False
     gl.right_labels = False
 
-    ax.set_title("Colormap de sups")
-
+    # ax.set_title("Colormap de sups")
     # plt.show()
-    plt.savefig('/Users/breno/mestrado/CPAM/figs/corr_maps/ncep/sup/' + serie + '_sup.png')
 
+    # # plt.show()
+    plt.savefig('/Users/breno/mestrado/CPAM/figs/corr_maps/era5/sup/' + serie + '_sup.png')
+
+# botar o nome dos modelos nas figuras abaixoÇ
 
 # plota o espectro em determinado ponto
 
@@ -495,6 +558,38 @@ for serie in sel_series:
 
 # v10a = v10_ocean.sel(lat=lat, lon=lon, method='nearest').values # testando pra um ponto
 # fv10 = filt_wind(v10a, data)
+
+    lat = -40
+    lon = -57
+
+    # lat = -65
+    # lon = -49
+    # lat = pts_max[0]
+    # lon = pts_max[1]
+    serie1 = data_filt
+    serie2 = fv10_da.sel(lat=lat, lon=lon, method = 'nearest').values
+
+    xx1=serie1
+    xx2=serie2
+    ppp=len(xx1)
+    dt=24#diario
+    win=2
+    smo=999
+    ci=99
+    h1,h2,fff,coef,conf,fase=crospecs(xx1, xx2, ppp, dt, win, smo, ci)
+
+    fig = plt.figure(figsize=(8,6))
+    plt.plot(1./fff/24,coef,'b')
+    plt.plot(1./fff/24,conf,'--k')
+    plt.xlim([0,30])
+    plt.ylabel('[Coerência]')
+    plt.yticks([0,.5,1])
+    plt.xlabel('Período (dias)')
+    plt.grid()
+    # plt.show()
+
+    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/era5/ped/' + serie + '_ped.png')
+
 
     # lat = -40
     # lon = -57
@@ -514,12 +609,18 @@ for serie in sel_series:
     smo=999
     ci=99
     h1,h2,fff,coef,conf,fase=crospecs(xx1, xx2, ppp, dt, win, smo, ci)
-    fig = plt.figure(figsize=(8,12))
+
+    fig = plt.figure(figsize=(8,6))
     plt.plot(1./fff/24,coef,'b')
     plt.plot(1./fff/24,conf,'--k')
-    plt.xlim([0,40])
+    plt.xlim([0,30])
+    plt.ylabel('[Coerência]')
+    plt.yticks([0,.5,1])
+    plt.xlabel('Período (dias)')
     plt.grid()
-    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/arg.png')
+    # plt.show()
+
+    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/era5/arg/' + serie + '_arg.png')
 
 
     lat = pts_max[0]
@@ -535,12 +636,15 @@ for serie in sel_series:
     smo=999
     ci=99
     h1,h2,fff,coef,conf,fase=crospecs(xx1, xx2, ppp, dt, win, smo, ci)
-    fig = plt.figure(figsize=(8,12))
+    fig = plt.figure(figsize=(8,6))
     plt.plot(1./fff/24,coef,'b')
     plt.plot(1./fff/24,conf,'--k')
-    plt.xlim([0,40])
+    plt.xlim([0,30])
+    plt.ylabel('[Coerência]')
+    plt.yticks([0,.5,1])
+    plt.xlabel('Período (dias)')
     plt.grid()
-    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/max/' + serie + '.png')
+    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/era5/max/' + serie + '.png')
 
     lat = pta_max[0]
     lon = pta_max[1]
@@ -555,12 +659,15 @@ for serie in sel_series:
     smo=999
     ci=99
     h1,h2,fff,coef,conf,fase=crospecs(xx1, xx2, ppp, dt, win, smo, ci)
-    fig = plt.figure(figsize=(8,12))
+    fig = plt.figure(figsize=(8,6))
     plt.plot(1./fff/24,coef,'b')
     plt.plot(1./fff/24,conf,'--k')
-    plt.xlim([0,40])
+    plt.xlim([0,30])
+    plt.ylabel('[Coerência]')
+    plt.yticks([0,.5,1])
+    plt.xlabel('Período (dias)')
     plt.grid()
-    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/sup/' + serie + '.png')
+    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/era5/sup/' + serie + '.png')
     
     plt.close('all')
 
@@ -602,7 +709,7 @@ np.corrcoef(x[:-lag], y[lag:])
 
 
 def get_all_available_data():
-    treated = all_series()
+    treated = all_series('/Users/breno/Documents/Mestrado/resultados/data')
     series = {}
     checked_series = {}
     for serie in treated:
