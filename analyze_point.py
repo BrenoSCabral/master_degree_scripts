@@ -5,10 +5,11 @@ import numpy as np
 import json
 import sys
 import pandas as pd
+import datetime
 
 # my files
 from read_data import read_exported_series, treat_exported_series, all_series, sep_series
-from model_data import get_model_region, get_correlation
+from model_data import get_model_region, get_correlation, mapa_corr
 from read_reanalisys import set_reanalisys_dims
 import filtro
 sys.path.append(
@@ -26,7 +27,7 @@ server = True
 if server:
     model_path = '/data3/MOVAR/modelos/REANALISES/'
     data_path =  f'/home/bcabral/mestrado/data/'
-    fig_folder = f'/home/bcabral/mestrado/fig/'
+    fig_folder = f'/home/bcabral/mestrado/fig/cpam/'
     # data_path = f'/home/bcabral/mestrado/data/{year}/'
     # fig_folder = f'/home/bcabral/mestrado/fig/{year}'
 
@@ -35,6 +36,52 @@ if server:
 #     fig_folder  = f'/Users/breno/mestrado/resultados/{year}/figs/'
 #     # fig_folder = f'/Users/breno/Documents/Mestrado/resultados/{year}/figs'
     
+
+
+def get_cpam_data(path_data = '/home/bcabral/mestrado/data'):
+    treated = all_series(path_data)
+    series = {}
+    checked_series = {}
+    for serie in treated:
+        if treated[serie]['lat'][0] > -20:
+            continue
+        if treated[serie].index[-1] < pd.Timestamp("1980"):
+            continue
+        if treated[serie].index[0] > pd.Timestamp("2022"):
+            continue
+        if treated[serie].index[-1] > pd.Timestamp("2022"):
+            if len(treated[serie][:'2021-12-31']) < 24*30*6:
+                continue
+            else:
+                treated[serie] = treated[serie][:'2021-12-31']
+        series[serie] = treated[serie]
+    
+    sep_serie = sep_series(series)
+
+    # check depois de ter os nans
+    for serie in sep_serie:
+        if sep_serie[serie]['lat'][0] > -20:
+            continue
+        if sep_serie[serie].index[-1] < pd.Timestamp("1980"):
+            continue
+        if sep_serie[serie].index[0] < pd.Timestamp("1980"):
+            if len(sep_serie[serie]['1980-01-01':]) < 24*30*6:
+                continue
+            else:
+                sep_serie[serie] = sep_serie[serie]['1980-01-01':]
+        if sep_serie[serie].index[0] > pd.Timestamp("2022"):
+            continue
+        if sep_serie[serie].index[-1] > pd.Timestamp("2022"):
+            if len(sep_serie[serie][:'2021-12-31']) < 24*30*6:
+                continue
+            else:
+                sep_serie[serie] = sep_serie[serie][:'2021-12-31']
+
+        checked_series[serie] = sep_serie[serie]
+
+    sel_series = {k: v for k, v in checked_series.items() if len(v) >= 24*30*6}
+
+    return sel_series
 
 
 def get_all_available_data(path_data = '/home/bcabral/mestrado/data'):
@@ -130,7 +177,7 @@ def get_data_stats(series, place):
     gen_stat_df.to_csv(f'{fig_folder}/stats/{place}/gen_{place}.csv')
     
 
-def get_correlation_matrix(lat, lon, data, t0, tf, json_path, years):
+def get_correlation_matrix(lat, lon, data, t0, tf, json_path, years, point_name):
     if os.path.exists(json_path):
         return json_path
     json_dict = {}
@@ -157,6 +204,12 @@ def get_correlation_matrix(lat, lon, data, t0, tf, json_path, years):
         reanal_subset['ssh'].load()
         reanal_subset = reanal_subset.sel(time=slice(t0, tf))
 
+        if len(reanal_subset['ssh']) > len(data):
+            tf2 = tf - datetime.timedelta(days=len(reanal_subset['ssh']) - len(data))
+            reanal_subset = reanal_subset.sel(time=slice(t0, tf2))
+        elif len(reanal_subset['ssh']) < len(data):
+            data = data[:-(len(data) - len(reanal_subset['ssh']))]
+
 
         correlation, latlons= get_correlation(data, reanal_subset, fig_folder)
 
@@ -164,7 +217,7 @@ def get_correlation_matrix(lat, lon, data, t0, tf, json_path, years):
         max_index = np.unravel_index(np.argmax(correlation, axis=None), correlation.shape)
 
         json_dict[model] = latlons[max_index]
-        # mapa_corr(lon, lat, reanal_subset, correlation, model, '_'.join(str.split(data_name, '_')[:-1]), fig_folder)
+        mapa_corr(lon, lat, reanal_subset, correlation, model, point_name, fig_folder)
     
     with open(json_path, 'w') as f:
         json.dump(json_dict, f)
@@ -193,9 +246,9 @@ def get_reanalisys(point, model, di, df, years):
 
 
 def get_reanalisys_stats(data, reanalisys, place, model):
-    stat_met = stats.stats(reanalisys * 100, data)
-    dep_stat_met = stats.dependent_stats(reanalisys * 100, 		data)
-    gen_stats = stats.general_stats(reanalisys * 100)
+    stat_met = stats.stats(reanalisys, data)
+    dep_stat_met = stats.dependent_stats(reanalisys, data)
+    gen_stats = stats.general_stats(reanalisys)
 
     # gen_stats['Dado'] = stats.general_stats(data)
 
@@ -215,7 +268,8 @@ def main():
     import warnings
     warnings.filterwarnings('ignore')
     
-    all_data = get_all_available_data() # TODO: Precisa mudar aqui de H pra h (deprecated)
+    # all_data = get_all_available_data() # TODO: Precisa mudar aqui de H pra h (deprecated)
+    all_data = get_cpam_data()
 
     erros = {}
 
@@ -229,30 +283,6 @@ def main():
             lat, lon = data['lat'][0], data['lon'][0]
             data_filt = filt_data(data)
 
-        # for point in os.listdir(data_path):
-        #     if point[-1] != 'v':
-        #         continue
-
-        #     data, lat, lon = get_data(data_path + point)
-        #     if len(data) > 10000:
-        #         data = treat_exported_series(read_exported_series(data_path + point))
-
-        #     max_nans = contar_nans_seguidos(data['ssh']).max()
-        #     if max_nans > 6:
-        #         continue
-        #     elif max_nans > 0:
-        #         data['ssh'] = data['ssh'].interpolate('quadratic')
-
-        #     if data['ssh'].max() < 2.0:
-        #         # mudar essa funcao aqui. Pegar o valor maximo da serie e se ele for menor que n,
-        #         # multiplicar por 100
-        #         data['ssh'] = data['ssh'] *100
-
-        #     data_filt = filt_data(data)
-
-        #     print('OK ' + point)
-
-
             gplots.plot_time_series(data['ssh'], 'Série Temporal de ' + point, f'{fig_folder}/ponto_serie/', point)
             # nomear eixos (cm e data)
             gplots.plot_spectrum(data['ssh'], f'Espectro de {point}', f'{fig_folder}/spectra/{point}/', f'spec_{point}')
@@ -261,16 +291,23 @@ def main():
 
             # TODO: em teoria teria que mexer aqui tbm pra ter o mesmo horario no dado e no modelo
             get_correlation_matrix(lat, lon, data_filt, data.index[0], data.index[-1], f'/home/bcabral/mestrado/{point}.json',
-                                range(data.index[0].year, data.index[-1].year +1))
+                                range(data.index[0].year, data.index[-1].year +1), point)
             get_data_stats(data_filt, point)
             for model in ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']:
                 data_filt_m = data_filt
                 print('FAZENDO ESTUDO DO ' + model)
                 rea_brute, reanalisys, fil_reanalisys, filt_time = get_reanalisys(point, model, data.index[0],
                                                                     data.index[-1], range(data.index[0].year, data.index[-1].year +1))
-                if pd.to_datetime(rea_brute['time'].values[0]).hour != 0:
-                    data_filt_m = filt_data(data, sel_hour = pd.to_datetime(rea_brute['time'].values[0]).hour -3)
+                # if pd.to_datetime(rea_brute['time'].values[0]).hour != 0:
+                #   ->>>>> POR ALGUM MOTIVO O AJUSTE DA HORA TAVA DIMINUINDO A CORRELACAO????
+                #     data_filt_m = filt_data(data, sel_hour = pd.to_datetime(rea_brute['time'].values[0]).hour -3)
 
+                if len(fil_reanalisys) > len(data_filt_m):
+                    fil_reanalisys = fil_reanalisys[:-(len(fil_reanalisys) - len(data_filt_m))]
+                    reanalisys = reanalisys[:-(len(reanalisys) - len(data_filt_m))]
+                    filt_time = filt_time[:-(len(filt_time) - len(data_filt_m))]
+                elif len(fil_reanalisys) < len(data_filt_m):
+                    data_filt_m = data_filt_m[:-(len(data_filt_m) - len(fil_reanalisys))]
                 
                 reanalisys = reanalisys * 100 # pasando pra cm
                 fil_reanalisys = fil_reanalisys * 100 # passando pra cm
@@ -299,4 +336,4 @@ def main():
             print(len('ERRO EM {point}')*'!')
             print(len('ERRO EM {point}')//4*'ERRO ')
 
-    pd.DataFrame(erros).to_csv('/home/bcabral/mestrado/erros.csv')
+    pd.DataFrame(erros, index = []).to_csv('/home/bcabral/mestrado/erros.csv')
