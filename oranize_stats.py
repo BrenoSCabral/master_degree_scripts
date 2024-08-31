@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 
 models = ['BRAN', 'CGLO', 'FOAM', 'GLOR4', 'GLOR12', 'HYCOM', 'ORAS']
 # path_stats = '/Users/breno/Documents/Mestrado/resultados/2012/figs/stats/'
-path_stats = '/home/bcabral/mestrado/fig/stats/'
+path_stats = '/Users/breno/mestrado/CPAM/stats/'
 simulations = {}
 for point in os.listdir(path_stats):
     if point[0] == '.':
@@ -28,8 +28,8 @@ for point in os.listdir(path_stats):
     
     observations = {'std': pd.read_csv(path_stats + point + '/gen_' + point + '.csv')['0'][2]}
     predictions = simulations[point]
-    fig = taylor_plot(observations, predictions, title=f"{point[:-4]}", show=False)
-    fig.savefig(f'/home/bcabral/mestrado/fig/taylor/{point}.png')
+    fig = taylor_plot(observations, predictions, true_label ='Dado', title=f"{point}", show=False, lang='pt')
+    fig.savefig(f'/Users/breno/mestrado/CPAM/taylor/{point}.png')
     # fig.savefig(f'/Users/breno/Documents/Mestrado/resultados/2012/figs/taylor/{point[:-4]}.png')
 
 
