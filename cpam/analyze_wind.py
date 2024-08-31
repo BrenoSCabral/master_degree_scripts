@@ -23,7 +23,8 @@ from crosspecs import crospecs
 import math
 
 def get_available_data():
-    treated = all_series('/Users/breno/Documents/Mestrado/resultados/data')
+    # treated = all_series('/Users/breno/Documents/Mestrado/resultados/data')
+    treated = all_series('/home/bcabral/mestrado/data') # server
     series = {}
     checked_series = {}
     for serie in treated:
@@ -153,43 +154,67 @@ def set_wind_reanalisys_dims(reanalisys, name):
 
 
 def plot_grid( reanalisys, nome_modelo):
-    fig = plt.figure(figsize=(10, 8))
-    ax = plt.axes(projection=ccrs.PlateCarree())
+    if type(reanalisys) != list:
+        print('funcao nao usavel')
+        return 0
+    # fig = plt.figure(figsize=(10, 8))
+    fig,axes = plt.subplots(ncols=2,nrows=2,figsize=(6,6),
+                      subplot_kw={'projection': ccrs.PlateCarree()})
+
+    # axes = plt.axes(projection=ccrs.PlateCarree())
+    axes[-1][-1].set_axis_off()
+    axes[0][1].set_xticks([-40,  -70], crs=ccrs.PlateCarree())
+    axes[1][0].set_xticks([-40, -70], crs=ccrs.PlateCarree())
+    axes[0][0].set_yticks([-20, -50], crs=ccrs.PlateCarree())
+    axes[1][0].set_yticks([-20, -50], crs=ccrs.PlateCarree())
+
+
+
+
+
+    for ax, reanalisys in zip([y for x in axes for y in x], reanalises):
+    # for ax, reanalisys in zip(axes, reanalises):
 
 #     - Latitude: -52,5 a - 42,5
-#    - Longitude: -70 a -60-
+# #    - Longitude: -70 a -60-
+#     lat_range = slice(-20,-50)
+#     lon_range = slice(-70,-40)
 
-    ax.set_extent([-57.5, -72.5, -40, -55], crs=ccrs.PlateCarree())
+        ax.set_extent([-40, -70, -20, -50], crs=ccrs.PlateCarree())
 
-    ax.add_feature(cfeature.COASTLINE)
-    ax.add_feature(cfeature.BORDERS, linestyle=':')
-    ax.add_feature(cfeature.LAND, edgecolor='black')
-    ax.add_feature(cfeature.OCEAN)
-    ax.add_feature(cfeature.LAKES, edgecolor='black')
-    ax.add_feature(cfeature.RIVERS)
+        ax.add_feature(cfeature.COASTLINE)
+        ax.add_feature(cfeature.BORDERS, linestyle=':')
+        ax.add_feature(cfeature.LAND, edgecolor='black')
+        ax.add_feature(cfeature.OCEAN)
+        ax.add_feature(cfeature.LAKES, edgecolor='black')
+        ax.add_feature(cfeature.RIVERS)
 
-    gl = ax.gridlines(crs=ccrs.PlateCarree(), linewidth=.5,
-                        color='black', alpha=0.5, linestyle='--', draw_labels=True)
-    gl.xlabels_top = False
-    gl.ylabels_left = False
-    gl.ylabels_right=True
-    gl.xlines = True
-    lons = reanalisys['lon'].values
-    lats = reanalisys['lat'].values
-    gl.xlocator = mticker.FixedLocator(lons)
-    gl.ylocator = mticker.FixedLocator(lats)
-    gl.xformatter = LONGITUDE_FORMATTER
-    gl.yformatter = LATITUDE_FORMATTER
-    gl.xlabel_style = {'color': 'red'}
-    # ax.set_title(f'Ponto ')
+        gl = ax.gridlines(crs=ccrs.PlateCarree(), linewidth=.5,
+                            color='black', alpha=0.5, linestyle='--', draw_labels=True)
+        gl.xlabels_top = False
+        gl.xlabels_bottom = False
+        gl.ylabels_left = False
+        gl.ylabels_right= False
+        gl.xlines = True
+        lons = reanalisys['lon'].values
+        lats = reanalisys['lat'].values
+        gl.xlocator = mticker.FixedLocator(lons)
+        gl.ylocator = mticker.FixedLocator(lats)
+        gl.xformatter = LONGITUDE_FORMATTER
+        gl.yformatter = LATITUDE_FORMATTER
+        # gl.xlabel_style = None
+
+    # plt.show()
+        # ax.set_title(f'Ponto ')
 
     # plt.tight_layout()
 
-    plt.title(nome_modelo + "'s grid")
+    # plt.title(nome_modelo + "'s grid")
     plt.tight_layout()
 
     # os.makedirs(f'/Users/breno/mestrado/CPAM/figs/data_mets/', exist_ok=True)
-    plt.savefig(f'/Users/breno/mestrado/CPAM/figs/data_mets/points_{nome_modelo}.png')
+    # plt.savefig(f'/Users/breno/mestrado/CPAM/figs/data_mets/points_{nome_modelo}.png')
+    plt.savefig(f'/Users/breno/mestrado/CPAM/figs/data_mets/grid_points.png')
 
 
 def convert_lon(lon):
@@ -227,23 +252,26 @@ def plot_mask(mask):
 
 
 def plot_points(pts):
+    # depois posso ver de colocar a batmetria aqui se necessario
     coord = ccrs.PlateCarree()
 
-    fig = plt.figure(figsize=(6, 6))
+    fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection=coord)
 
 
     ax.add_feature(cfeature.LAND, facecolor='lightgray')
     ax.add_feature(cfeature.BORDERS, zorder=10)
     ax.add_feature(cfeature.COASTLINE, zorder=10)
+    ax.add_feature(cfeature.STATES, zorder = 10, edgecolor = 'black')
 
-    # ax.set_extent([-40, 10, -50, -30], crs=coord)
+    ax.set_extent([-56, -39, -36, -19], crs=coord)
+
 
     for point in pts:
         lat = pts[point]['lat'][0]
         lon =  pts[point]['lon'][0]
         plt.plot(lon, lat,
-                color='red', linewidth=2, marker='P',
+                color='red', linewidth=2, marker='o', markersize = 10,
                 transform=ccrs.PlateCarree()
                 )  
     lons = np.arange(-70, -20, 5)
@@ -261,30 +289,48 @@ def plot_points(pts):
     plt.tight_layout()
     plt.savefig(f'/Users/breno/mestrado/CPAM/figs/data_mets/data_points.png')
 
-models_path = '/Users/breno/mestrado/CPAM/models/'
+# models_path = '/Users/breno/mestrado/CPAM/models/' # local
+models_path = '/home/bcabral/CPAM/models/' # server
 
-models = ['ERA-5', 'MERRA2', 'NCEP']
+# models = ['ERA-5', 'MERRA2', 'NCEP']
 # NEED TO rename every MERRA2 file to end with .nc
 
 ## import my reanalisys
 # era_path = models_path + '/ERA-5/'
 
-reanalera = xr.open_mfdataset(models_path + '/ERA5/'+'*.nc')
-# reanalmerra = xr.open_mfdataset(models_path + '/MERRA2/'+'*.nc')
+# reanalera = xr.open_mfdataset(models_path + '/ERA5/'+'*.nc')
+# # reanalmerra = xr.open_mfdataset(models_path + '/MERRA2/'+'MERRA2_100.inst1_2d_asm_Nx.19800101.nc4.nc4?V10M[0/23][56/180][168/256],time,lat[56/180],lon[168/256]')
+reanalmerra = xr.open_mfdataset(models_path + '/MERRA2/'+'*.nc')
+
 # reanalncep = xr.open_mfdataset(models_path + '/NCEP/'+'*.nc')
 
 # reanal = reanalera
 # model = 'ERA-5'
 
-reanal = reanalera
-model = 'ERA5'
-## set its dimensions names
+# reanal = reanalera
+# model = 'ERA5'
+# ## set its dimensions names
 
-reanal = set_wind_reanalisys_dims(reanal, model)
+# reanal = set_wind_reanalisys_dims(reanal, model)
 
-## Plot the grids of each model
+# ## Plot the grids of each model
 
-# plot_grid(reanal, model)
+# reanalera = set_wind_reanalisys_dims(reanalera, 'ERA5')
+reanalmerra = set_wind_reanalisys_dims(reanalmerra, 'MERRA2')
+# reanalncep = set_wind_reanalisys_dims(reanalncep, 'NCEP')
+
+# lon_original = reanalncep['lon'].values
+# # precisa mudar esse pro NCEP
+# lon_convertido = convert_longitude_360_to_180(lon_original)
+# reanalncep = reanalncep.assign_coords(lon=lon_convertido)
+
+# reanalises = [reanalera, reanalmerra, reanalncep]
+
+# plot_grid(reanalera, 'ERA5')
+# plot_grid(reanalmerra, 'MERRA-2')
+# plot_grid(reanalncep, 'NCEP')
+
+reanal = reanalmerra
 
 
 # ## select only ocean data
@@ -338,12 +384,15 @@ filtered_data = datetime_index[datetime_index.hour == 12]
 sel_series = get_available_data()
 
 for serie in sel_series:
-    if serie == 'TIPLAMm0' or serie == 'Imbituba_2001_20074' or serie == 'Imbituba_2001_20075' \
-        or serie == 'Imbituba_2001_200719' or serie =='TERMINAL PORTUÁRIO DA PONTA DO FÉLIXm0' \
-        or serie =='ubatuba22' or serie=='ubatuba34' or serie=='TEPORTIm0' or serie=='Ubatuba_gloss22'\
-        or serie =='Ubatuba_gloss34': # or serie == 'BARRA DE PARANAGUÁ - CANAL DA GALHETAm0'\
-        # or serie=='PORTO DE PARANAGUÁ - CAIS OESTEm0' or serie=='ilha_fiscal8' or serie=='ilha_fiscal10'\
-        # or serie == 'ilha_fiscal11': # ja fiz
+    # if serie == 'TIPLAMm0' or serie == 'Imbituba_2001_20074' or serie == 'Imbituba_2001_20075' \
+    #     or serie == 'Imbituba_2001_200719' or serie =='TERMINAL PORTUÁRIO DA PONTA DO FÉLIXm0' \
+    #     or serie =='ubatuba22' or serie=='ubatuba34' or serie=='TEPORTIm0' or serie=='Ubatuba_gloss22'\
+    #     or serie =='Ubatuba_gloss34' or serie == 'BARRA DE PARANAGUÁ - CANAL DA GALHETAm0'\
+    #     or serie=='PORTO DE PARANAGUÁ - CAIS OESTEm0': # or serie=='ilha_fiscal8' or serie=='ilha_fiscal10'\
+    #     # or serie == 'ilha_fiscal11': # ja fiz
+    # if serie != 'ilha_fiscal12':
+    #     continue
+    if serie != 'ilha_fiscal12':
         continue
     print(f'fazendo {serie}')
     data = sel_series[serie]
@@ -362,14 +411,15 @@ for serie in sel_series:
 
     # corte para a reanalise 
     # lat_range = slice(-10, -52.5)
-    lat_range = slice(-20,-50)
+    lat_range = slice(-50, -20) # preciso pro merra2
+    # lat_range = slice(-20,-50)
     lon_range = slice(-70,-40)
     # lon_range = slice(-70, -30) # in 0 to 360
     # precisa mudar esse pro NCEp
-    # lon_range= slice(convert_lon(-70), convert_lon(-30)) # in 0 to 360
-    
+    # lon_range= slice(convert_lon(-70), convert_lon(-40)) # in 0 to 360
+
     v10_ocean = v10_ocean.sel(lat=lat_range, lon=lon_range)
-    lon_original = v10_ocean['lon'].values
+    # lon_original = v10_ocean['lon'].values
     # precisa mudar esse pro NCEP
     # lon_convertido = convert_longitude_360_to_180(lon_original)
     # v10_ocean = v10_ocean.assign_coords(lon=lon_convertido)
@@ -385,6 +435,10 @@ for serie in sel_series:
     # fv10_data = np.empty((len(lat_vals), len(lon_vals), len(time_vals)))
     fv10_data = np.empty((len(lat_vals), len(lon_vals), len(time_vals)))
 
+    import gc
+    import dask.array as da
+    v10_ocean = v10_ocean.chunk({'lat': 'auto', 'lon': 'auto'})
+
 
     for i, lat in enumerate(v10_ocean['lat'].values):
         for j, lon in enumerate(v10_ocean['lon'].values):
@@ -392,6 +446,7 @@ for serie in sel_series:
             fv10 = filt_wind(v10a, v10_ocean['time'], xdays = 6/24)
 
             fv10_data[i, j, :] = fv10
+            gc.collect()
 
 
     fv10_da = xr.DataArray(
@@ -479,7 +534,205 @@ for serie in sel_series:
     )
     # Plotar o colormap de abss
 
+
+    # # CODE MADE USING IA
+
+    # import numpy as np
+    # import pandas as pd
+    # import xarray as xr
+    # import dask.array as da
+    # import gc
+
+    # # Seleciona o intervalo de latitudes e longitudes
+    # v10_ocean = v10_ocean.sel(lat=lat_range, lon=lon_range)
+
+    # # Converte os valores de longitude, caso necessário (comentado)
+    # # lon_convertido = convert_longitude_360_to_180(v10_ocean['lon'].values)
+    # # v10_ocean = v10_ocean.assign_coords(lon=lon_convertido)
+
+    # # Valores de latitude, longitude e tempo (filtrando para as 12 horas)
+    # lat_vals = v10_ocean['lat'].values
+    # lon_vals = v10_ocean['lon'].values
+    # time_vals = v10_ocean['time'].sel(time=v10_ocean['time'].dt.hour == 12).values
+
+    # # Usando Dask para otimizar o uso de memória
+    # v10_ocean = v10_ocean.chunk({'lat': 'auto', 'lon': 'auto'})
+
+    # # Inicializa o array para armazenar os dados filtrados
+    # fv10_data = da.empty((len(lat_vals), len(lon_vals), len(time_vals)), dtype=np.float32)
+
+    # # Função para processar cada ponto de grade
+    # def process_grid_point(lat, lon):
+    #     v10a = v10_ocean.sel(lat=lat, lon=lon, method='nearest').values
+    #     fv10 = filt_wind(v10a, v10_ocean['time'], xdays=6/24)
+    #     return fv10
+
+    # # Processa os dados de forma paralela
+    # fv10_data = da.compute([process_grid_point(lat, lon) for lat in lat_vals for lon in lon_vals])
+
+    # # Converte para um DataArray do xarray
+    # fv10_da = xr.DataArray(
+    #     fv10_data,
+    #     coords=[lat_vals, lon_vals, time_vals],
+    #     dims=["lat", "lon", "time"],
+    #     name="fv10"
+    # )
+
+    # # Cálculo de correlação cruzada
+    # def calculate_cross_correlation(i, j):
+    #     serie1 = data_filt
+    #     serie2 = fv10_da.sel(lat=lat_vals[i], lon=lon_vals[j]).values
+
+    #     # Parâmetros para a função de correlação cruzada
+    #     ppp = len(serie1)
+    #     dt = 24  # diário
+    #     win = 2
+    #     smo = 999
+    #     ci = 99
+
+    #     # Cálculo da correlação cruzada
+    #     h1, h2, fff, coef, conf, fase = crospecs(serie1, serie2, ppp, dt, win, smo, ci)
+    #     abss_value = coef.sum()
+    #     sup_value = coef[coef > conf].sum()
+
+    #     return abss_value, sup_value
+
+    # # Vetorizando a operação de correlação cruzada
+    # abss_data, sups_data = zip(*[calculate_cross_correlation(i, j) for i in range(len(lat_vals)) for j in range(len(lon_vals))])
+
+    # # Normalizando e criando os DataArrays para os resultados
+    # abss_da = xr.DataArray(
+    #     np.array(abss_data).reshape(len(lat_vals), len(lon_vals)) / max(abss_data),
+    #     coords=[lat_vals, lon_vals],
+    #     dims=["lat", "lon"],
+    #     name='Coerência Integrada Normalizada'
+    # )
+
+    # sups_da = xr.DataArray(
+    #     np.array(sups_data).reshape(len(lat_vals), len(lon_vals)) / max(sups_data),
+    #     coords=[lat_vals, lon_vals],
+    #     dims=["lat", "lon"],
+    #     name='Coerência Superior à Confiança Estatística Integrada Normalizada'
+    # )
+
+    # ### CODE MADE USING AI
+
+    '''
+    PARTE DO CHATGPT QUE DEU CERTO
+
+    OBS: TEVE QUE PEGAR O ABS E O PTS DEPOIS
+    '''
+
+    # import numpy as np
+    # import xarray as xr
+    # import dask.array as da
+    # import gc
+
+    # # Configurações iniciais
+    # v10_ocean = v10_ocean.sel(lat=lat_range, lon=lon_range)
+    # lat_vals = v10_ocean['lat'].values
+    # lon_vals = v10_ocean['lon'].values
+    # time_vals = v10_ocean['time'].sel(time=v10_ocean['time'].dt.hour == 12).values
+
+    # # Usa Dask com chunking inteligente
+    # v10_ocean = v10_ocean.chunk({'lat': 'auto', 'lon': 'auto'})
+
+    # # Função para processar um ponto específico (vetorizada)
+    # def process_grid_point(lat_idx, lon_idx):
+    #     lat = lat_vals[lat_idx]
+    #     lon = lon_vals[lon_idx]
+    #     v10a = v10_ocean.sel(lat=lat, lon=lon, method='nearest').values
+    #     fv10 = filt_wind(v10a, v10_ocean['time'], xdays=6/24)
+    #     return fv10
+
+    # # Paralelismo com Dask
+    # from dask import delayed, compute
+
+    # # Processamento em paralelo usando delayed
+    # results = [
+    #     delayed(process_grid_point)(i, j) for i in range(len(lat_vals)) for j in range(len(lon_vals))
+    # ]
+
+    # # Coleta resultados
+    # fv10_data = compute(*results)
+
+    # # Converte para um DataArray do xarray
+    # fv10_da = xr.DataArray(
+    #     np.array(fv10_data).reshape(len(lat_vals), len(lon_vals), len(time_vals)),
+    #     coords=[lat_vals, lon_vals, time_vals],
+    #     dims=["lat", "lon", "time"],
+    #     name="fv10"
+    # )
+
+    # # Liberando memória não utilizada
+    # gc.collect()
+
+    # # Processamento da correlação cruzada vetorizado
+    # def calculate_cross_correlation(lat_idx, lon_idx):
+    #     serie1 = data_filt
+    #     serie2 = fv10_da.isel(lat=lat_idx, lon=lon_idx).values
+
+    #     # Parâmetros para a função de correlação cruzada
+    #     ppp = len(serie1)
+    #     dt = 24  # diário
+    #     win = 2
+    #     smo = 999
+    #     ci = 99
+
+    #     # Cálculo da correlação cruzada
+    #     h1, h2, fff, coef, conf, fase = crospecs(serie1, serie2, ppp, dt, win, smo, ci)
+    #     abss_value = coef.sum()
+    #     sup_value = coef[coef > conf].sum()
+
+    #     return abss_value, sup_value
+
+    # # Calculando a correlação cruzada em paralelo
+    # correlation_results = [
+    #     delayed(calculate_cross_correlation)(i, j) for i in range(len(lat_vals)) for j in range(len(lon_vals))
+    # ]
+
+    # # Coleta resultados
+    # abss_data, sups_data = zip(*compute(*correlation_results))
+
+    # # Convertendo resultados em DataArrays normalizados
+    # abss_da = xr.DataArray(
+    #     np.array(abss_data).reshape(len(lat_vals), len(lon_vals)) / max(abss_data),
+    #     coords=[lat_vals, lon_vals],
+    #     dims=["lat", "lon"],
+    #     name='Coerência Integrada Normalizada'
+    # )
+
+    # sups_da = xr.DataArray(
+    #     np.array(sups_data).reshape(len(lat_vals), len(lon_vals)) / max(sups_data),
+    #     coords=[lat_vals, lon_vals],
+    #     dims=["lat", "lon"],
+    #     name='Coerência Superior à Confiança Estatística Integrada Normalizada'
+    # )
+
+    '''
+    PARTE QUE DEU CERTO
+    '''
+
+
+
     # Plotar o colormap de abss em um mapa
+    max_idx = abss_da.argmax()
+
+    # Extrai as coordenadas correspondentes ao valor máximo
+    lat_pta = abss_da['lat'].values[max_idx // abss_da.sizes['lon']]
+    lon_pta = abss_da['lon'].values[max_idx % abss_da.sizes['lon']]
+
+    pta_max = (lat_pta, lon_pta)
+
+    mas_idx = sups_da.argmax()
+
+    # Extrai as coordenadas correspondentes ao valor máximo
+    lat_pts = sups_da['lat'].values[mas_idx // sups_da.sizes['lon']]
+    lon_pts = sups_da['lon'].values[mas_idx % sups_da.sizes['lon']]
+
+    pts_max = (lat_pts, lon_pts)
+
+
     fig, ax = plt.subplots(figsize=(12, 8), subplot_kw={'projection': ccrs.PlateCarree()})
     cmap = abss_da.plot(ax=ax, cmap="viridis", transform=ccrs.PlateCarree())
     cmap.set_label(' ')
@@ -512,8 +765,10 @@ for serie in sel_series:
     # plt.show()
 
     # # plt.show()
-    plt.savefig('/Users/breno/mestrado/CPAM/figs/corr_maps/era5/abs/' + serie + '_abs.png')
+    plt.savefig('/Users/breno/mestrado/CPAM/figs/corr_maps/merra2/abs/' + serie + '_abs.png')
+    # os.makedirs(f'/home/bcabral/CPAM/fig/corr_maps/merra2/abs/', exist_ok=True)
 
+    # plt.savefig('/home/bcabral/CPAM/fig/corr_maps/merra2/abs/' + serie + '_abs.png')
 
     # Plotar o colormap de sups em um mapa
     fig, ax = plt.subplots(figsize=(12, 8), subplot_kw={'projection': ccrs.PlateCarree()})
@@ -547,7 +802,8 @@ for serie in sel_series:
     # plt.show()
 
     # # plt.show()
-    plt.savefig('/Users/breno/mestrado/CPAM/figs/corr_maps/era5/sup/' + serie + '_sup.png')
+
+    plt.savefig('/Users/breno/mestrado/CPAM/figs/corr_maps/merra2/sup/' + serie + '_sup.png')
 
 # botar o nome dos modelos nas figuras abaixoÇ
 
@@ -588,7 +844,9 @@ for serie in sel_series:
     plt.grid()
     # plt.show()
 
-    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/era5/ped/' + serie + '_ped.png')
+    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/merra2/ped/' + serie + '_ped.png')
+
+    # plt.savefig('/home/bcabral/CPAM/fig/corr_maps/merra2/ped/' + serie + '_ped.png')
 
 
     # lat = -40
@@ -620,7 +878,10 @@ for serie in sel_series:
     plt.grid()
     # plt.show()
 
-    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/era5/arg/' + serie + '_arg.png')
+
+    # plt.savefig('/home/bcabral/CPAM/fig/corr_maps/merra2/arg/' + serie + '_arg.png')
+    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/merra2/arg/' + serie + '_arg.png')
+
 
 
     lat = pts_max[0]
@@ -644,7 +905,10 @@ for serie in sel_series:
     plt.yticks([0,.5,1])
     plt.xlabel('Período (dias)')
     plt.grid()
-    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/era5/max/' + serie + '.png')
+
+    # plt.savefig('/home/bcabral/CPAM/fig/cross_corr/merra2/max/' + serie + '.png')
+    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/merra2/max/' + serie + '_max.png')
+
 
     lat = pta_max[0]
     lon = pta_max[1]
@@ -667,8 +931,11 @@ for serie in sel_series:
     plt.yticks([0,.5,1])
     plt.xlabel('Período (dias)')
     plt.grid()
-    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/era5/sup/' + serie + '.png')
-    
+
+    # plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/merra2/sup/' + serie + '.png')
+    plt.savefig('/Users/breno/mestrado/CPAM/figs/cross_corr/merra2/sup/' + serie + '_sup.png')
+
+
     plt.close('all')
 
 
@@ -777,3 +1044,32 @@ data_info = pd.DataFrame(all_infos).T
 data_info.columns = ['Data Inicial', 'Data Final', 'Latitude']
 data_info = data_info.sort_values('Latitude')
 data_info.to_csv('/Users/breno/mestrado/resultados/data_info.csv')
+
+
+
+## Renomeando os arquivos do MERRA2
+
+import os
+import re
+
+# Caminho para o diretório onde estão os arquivos
+directory = "/Users/breno/mestrado/CPAM/models/MERRA2"
+
+# Regex para extrair a data do nome do arquivo
+pattern = re.compile(r"MERRA2_(\d{3})\.inst1_2d_asm_Nx\.(\d{8})\.nc4\.nc4")
+
+# Loop pelos arquivos no diretório
+for filename in os.listdir(directory):
+    # Verifica se o arquivo corresponde ao padrão
+    match = pattern.match(filename)
+    if match:
+        # Extrai a data
+        data = match.group(2)
+        # Novo nome de arquivo
+        new_name = f"merra2_v_{data}.nc"
+        # Caminho completo dos arquivos
+        old_file = os.path.join(directory, filename)
+        new_file = os.path.join(directory, new_name)
+        # Renomeia o arquivo
+        os.rename(old_file, new_file)
+        print(f"Renomeado: {filename} -> {new_name}")
