@@ -16,15 +16,18 @@ import matplotlib.ticker as mticker
 import matplotlib.dates as mdates
 
 
+sys.path.append(
+    '../old'
+)
+sys.path.append(
+    '../dynamical_analysis'
+)
+sys.path.append(
+    '../'
+)
 # my files
 from read_reanalisys import set_reanalisys_curr_dims
 import filtro
-sys.path.append(
-    'old'
-)
-sys.path.append(
-    'dynamical_analysis'
-)
 import plot_hovmoller as ph
 import stats
 import general_plots as gplots
@@ -49,7 +52,7 @@ def get_reanalisys(lat, lon, model, di, df):
                                             , model)
         
     reanalisys = xr.concat(list(reanal.values()), dim="time")
-    model_series = reanalisys.sel(latitude=lat, longitude=lon, method='nearest')
+    model_series = reanalisys.sel(latitude=lat, longitude=lon, depth=0, method='nearest')
     model_series = model_series.sel(time=slice(di, df))
 
     mod_u = model_series['u'].values
@@ -169,10 +172,33 @@ def collect_ssh_data(pts, di, df, model):
     
     return df_ssh
 
+def collect_curr_data(pts, di, df, model):
+    ssh_data = []
+    lats = []
+    times = []
+    
+    for index, row in pts.iterrows():
+        lat = row['lat']
+        lon = row['lon']
+        _, reanalisys, fil_reanalisys, filt_time = get_reanalisys(lat, lon, model, di, df)
+        
+        # Armazenar latitude, tempo e dados de SSH
+        lats.extend([lat] * len(filt_time))
+        times.extend(filt_time)
+        ssh_data.extend(fil_reanalisys)
+    
+    # Criar DataFrame para os dados
+    df_ssh = pd.DataFrame({
+        'time': times,
+        'lat': lats,
+        'ssh': ssh_data
+    })
+    
+    return df_ssh
 
 year = 2015
 for model in models:
     reanal = xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
     print('______________________________')
-    print(model, list(reanal.keys()))
+    print(model, list(reanal.indexes))# list(reanal.keys()))
 
