@@ -27,7 +27,7 @@ server = True
 if server:
     model_path = '/data3/MOVAR/modelos/REANALISES/'
     data_path =  f'/home/bcabral/mestrado/data/'
-    fig_folder = f'/home/bcabral/mestrado/fig/cpam/'
+    fig_folder = f'/home/bcabral/mestrado/fig/'
     # data_path = f'/home/bcabral/mestrado/data/{year}/'
     # fig_folder = f'/home/bcabral/mestrado/fig/{year}'
 
@@ -268,8 +268,8 @@ def main():
     import warnings
     warnings.filterwarnings('ignore')
     
-    # all_data = get_all_available_data() # TODO: Precisa mudar aqui de H pra h (deprecated)
-    all_data = get_cpam_data()
+    all_data = get_all_available_data() # TODO: Precisa mudar aqui de H pra h (deprecated)
+    # all_data = get_data()
 
     erros = {}
 
@@ -337,3 +337,6 @@ def main():
             print(len('ERRO EM {point}')//4*'ERRO ')
 
     pd.DataFrame(erros, index = []).to_csv('/home/bcabral/mestrado/erros.csv')
+
+if __name__ == '__main__':
+    main()
