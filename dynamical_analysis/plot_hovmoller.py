@@ -158,7 +158,7 @@ def plot_hovmoller_o20(hovmoller_data, model, fig_folder):
 
         
         # Adicionar contornos preto para valores extremos
-        ax.contour(hov_data.columns, hov_data.index, hov_data.values, levels=[-10, -5, 5- 10], colors='black', linestyles='-', linewidths=.5)
+        ax.contour(hov_data.columns, hov_data.index, hov_data.values, levels=[-10, -5, 5, 10], colors='black', linestyles='-', linewidths=.5)
         
 
         ax.set_ylabel('Latitude')
