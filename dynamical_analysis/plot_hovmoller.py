@@ -15,7 +15,7 @@ def prepare_hovmoller_data(df_ssh):
     return df_pivot
 
 
-def plot_hovmoller(hovmoller_data, model):
+def plot_hovmoller(hovmoller_data, model, fig_folder):
     # otimizado pra plotar um ano INTEIRO de jan a dez
     ano = hovmoller_data.columns[0].year
     mid = pd.datetime(ano,7,1)
@@ -68,11 +68,13 @@ def plot_hovmoller(hovmoller_data, model):
     cbar.ax.tick_params(labelsize=12)
 
     # plt.show()
-    os.makedirs('/Users/breno/mestrado/hovmoller/', exist_ok=True)
-    plt.savefig(f'/Users/breno/mestrado/hovmoller/{model}_{ano}.png')
+    os.makedirs(f'/{fig_folder}', exist_ok=True)
+    plt.savefig(f'/{fig_folder}/{model}_{ano}.png')
+    # os.makedirs('/Users/breno/mestrado/hovmoller/', exist_ok=True)
+    # plt.savefig(f'/Users/breno/mestrado/hovmoller/{model}_{ano}.png')
 
 
-def plot_hovmoller_u20(hovmoller_data, model):
+def plot_hovmoller_u20(hovmoller_data, model, fig_folder):
     # otimizado pra plotar um ano INTEIRO de jan a dez
     ano = hovmoller_data.columns[0].year
     mid = pd.datetime(ano,7,1)
@@ -125,11 +127,13 @@ def plot_hovmoller_u20(hovmoller_data, model):
     cbar.ax.tick_params(labelsize=12)
 
     # plt.show()
-    os.makedirs('/Users/breno/mestrado/hovmoller/', exist_ok=True)
-    plt.savefig(f'/Users/breno/mestrado/hovmoller/{model}_{ano}_sub20.png')
+    os.makedirs(f'/{fig_folder}', exist_ok=True)
+    plt.savefig(f'/{fig_folder}/{model}_{ano}_sub20.png')
+    # os.makedirs('/Users/breno/mestrado/hovmoller/', exist_ok=True)
+    # plt.savefig(f'/Users/breno/mestrado/hovmoller/{model}_{ano}_sub20.png')
 
 
-def plot_hovmoller_o20(hovmoller_data, model):
+def plot_hovmoller_o20(hovmoller_data, model, fig_folder):
     # otimizado pra plotar um ano INTEIRO de jan a dez
     ano = hovmoller_data.columns[0].year
     mid = pd.datetime(ano,7,1)
@@ -182,5 +186,7 @@ def plot_hovmoller_o20(hovmoller_data, model):
     cbar.ax.tick_params(labelsize=12)
 
     # plt.show()
-    os.makedirs('/Users/breno/mestrado/hovmoller/', exist_ok=True)
-    plt.savefig(f'/Users/breno/mestrado/hovmoller/{model}_{ano}_+20.png')
+    os.makedirs(f'/{fig_folder}', exist_ok=True)
+    plt.savefig(f'/{fig_folder}/{model}_{ano}_+20.png')
+    # os.makedirs('/Users/breno/mestrado/hovmoller/', exist_ok=True)
+    # plt.savefig(f'/Users/breno/mestrado/hovmoller/{model}_{ano}_+20.png')
