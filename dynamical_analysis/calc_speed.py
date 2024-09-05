@@ -233,10 +233,12 @@ for model in models:
     df_ssh = collect_ssh_data(pts, di, df, model)
 
     # Hovmoller:
-    hovmoller_data = prepare_hovmoller_data(df_ssh) * 100 # passando pra m
+    hovmoller_data = ph.prepare_hovmoller_data(df_ssh) * 100 # passando pra m
+    print("comecou os plots")
     ph.plot_hovmoller(hovmoller_data, model=model, fig_folder=fig_folder)
     ph.plot_hovmoller_u20(hovmoller_data[hovmoller_data.index < -20], model=model, fig_folder=fig_folder)
     ph.plot_hovmoller_o20(hovmoller_data[hovmoller_data.index >= -20], model=model, fig_folder=fig_folder)
+    print('terminou os plots')
 
 
 '''

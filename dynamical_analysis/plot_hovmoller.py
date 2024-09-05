@@ -18,7 +18,7 @@ def prepare_hovmoller_data(df_ssh):
 def plot_hovmoller(hovmoller_data, model, fig_folder):
     # otimizado pra plotar um ano INTEIRO de jan a dez
     ano = hovmoller_data.columns[0].year
-    mid = pd.datetime(ano,7,1)
+    mid = datetime.datetime(ano,7,1)
 
 
     data = [
@@ -77,7 +77,7 @@ def plot_hovmoller(hovmoller_data, model, fig_folder):
 def plot_hovmoller_u20(hovmoller_data, model, fig_folder):
     # otimizado pra plotar um ano INTEIRO de jan a dez
     ano = hovmoller_data.columns[0].year
-    mid = pd.datetime(ano,7,1)
+    mid = datetime.datetime(ano,7,1)
 
 
     data = [
@@ -136,7 +136,7 @@ def plot_hovmoller_u20(hovmoller_data, model, fig_folder):
 def plot_hovmoller_o20(hovmoller_data, model, fig_folder):
     # otimizado pra plotar um ano INTEIRO de jan a dez
     ano = hovmoller_data.columns[0].year
-    mid = pd.datetime(ano,7,1)
+    mid = datetime.datetime(ano,7,1)
 
 
     data = [
