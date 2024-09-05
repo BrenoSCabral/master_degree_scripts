@@ -29,12 +29,12 @@ import stats
 import general_plots as gplots
 
 import matplotlib
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 
-# model_path = '/data3/MOVAR/modelos/REANALISES/'
-model_path = '/Users/breno/model_data/'
+model_path = '/data3/MOVAR/modelos/REANALISES/'
+# model_path = '/Users/breno/model_data/'
 fig_folder = '/home/bcabral/mestrado/fig/isobaths_50/'
 
 
@@ -42,10 +42,10 @@ def get_reanalisys(lat, lon, model, di, df):
     reanal = {}
     years = list(set([di.year, df.year]))
     for year in years:
-        reanal[year] = set_reanalisys_dims(xr.open_mfdataset(model_path + model + '/*.nc')
-                                            , model)        
-        # reanal[year] = set_reanalisys_dims(xr.open_mfdataset(model_path + model + '/SSH/' + str(year)  + '/*.nc')
-        #                                     , model)
+        # reanal[year] = set_reanalisys_dims(xr.open_mfdataset(model_path + model + '/*.nc')
+        #                                   , model)        
+        reanal[year] = set_reanalisys_dims(xr.open_mfdataset(model_path + model + '/SSH/' + str(year)  + '/*.nc')
+                                             , model)
         
     reanalisys = xr.concat(list(reanal.values()), dim="time")
     model_series = reanalisys.sel(latitude=lat, longitude=lon, method='nearest')
@@ -222,23 +222,27 @@ def collect_ssh_data(pts, di, df, model):
 # # testar depois no ano de 2013 por ter um el nino fraco
 # # link pra consulta -> https://origin.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/ONI_v5.php
 
+
+di = datetime.datetime(2015,1,1)
+df = datetime.datetime(2015,12,31)
+# model = 'BRAN'
+pts = get_points ()
+models =  ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']
+
+for model in models:
+    df_ssh = collect_ssh_data(pts, di, df, model)
+
+    # Hovmoller:
+    hovmoller_data = ph.prepare_hovmoller_data(df_ssh) * 100 # passando pra m
+    ph.plot_hovmoller(hovmoller_data, model=model)
+    ph.plot_hovmoller_u20(hovmoller_data[hovmoller_data.index < -20], model=model)
+    ph.plot_hovmoller_o20(hovmoller_data[hovmoller_data.index >= -20], model=model)
+
+
 '''
 TODO:
 1 - Fazer o calculo da velocidade utilizando a media
 '''
-di = datetime.datetime(2015,1,1)
-df = datetime.datetime(2015,12,31)
-model = 'BRAN'
-
-pts = get_points ()
-df_ssh = collect_ssh_data(pts, di, df, model)
-
-# Hovmoller:
-hovmoller_data = ph.prepare_hovmoller_data(df_ssh) * 100 # passando pra m
-ph.plot_hovmoller(hovmoller_data, model=model)
-ph.plot_hovmoller_u20(hovmoller_data[hovmoller_data.index < -20], model=model)
-ph.plot_hovmoller_o20(hovmoller_data[hovmoller_data.index >= -20], model=model)
-
 
 ##########################
 # calculando a velocidade --> Acho que não vai dar certo pela limitação física do meu camarada
