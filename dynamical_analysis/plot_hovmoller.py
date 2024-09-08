@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 import os
 import matplotlib.dates as mdates
 import numpy as np
+import datetime
 
 def prepare_hovmoller_data(df_ssh):
     # testar essa linha abaixo
@@ -36,7 +37,7 @@ def plot_hovmoller(hovmoller_data, model, fig_folder):
         # Define os níveis de SSH para o contorno contínuo
         
         # Plotar o preenchimento de contorno contínuo
-        c = ax.contourf(hov_data.columns, hov_data.index, hov_data.values, levels=levels, cmap='bwr')
+        c = ax.contourf(hov_data.columns, hov_data.index, hov_data.values, levels=levels, cmap='seismic')
 
         
         # Adicionar contornos preto para valores extremos
