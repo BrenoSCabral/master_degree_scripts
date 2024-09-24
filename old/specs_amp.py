@@ -262,9 +262,14 @@ def spec_sum(da, **kw):
     xxx = da.values
     ppp = len(xxx)  # Comprimento da janela de filtro no domínio do tempo
                     # (por enquanto vamos usar o comprimento da série)
-    dt = (da.time.to_series(). # tava index no lugar de time
-          diff().astype('timedelta64[m]').
-          fillna(0).astype('int')/60)[1] # Intervalo amostral (inferindo do Dataframe df)
+    try:
+        dt = (da.time.to_series(). # tava index no lugar de time
+            diff().astype('timedelta64[m]').
+            fillna(0).astype('int')/60)[1] # Intervalo amostral (inferindo do Dataframe df)
+    except Exception:
+        dt = (da.index.to_series(). 
+            diff().astype('timedelta64[m]').
+            fillna(0).astype('int')/(60*24))[1] # Intervalo amostral (inferindo do Dataframe df)      
     
     # abaixo eh quando eu jogo o array ao inves do dataframe
 
@@ -425,7 +430,7 @@ def plot():
 
 def sing_plot(hepyao, chio, cloo, prao, image_path):
     fig=plt.figure(figsize=(20,10))
-    ax = fig.add_subplot(121)
+    ax = fig.add_subplot(111)
     # ax.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
     # ax.spines['top'].set_color('none')
     # ax.spines['bottom'].set_color('none')
@@ -442,13 +447,14 @@ def sing_plot(hepyao, chio, cloo, prao, image_path):
     ax.grid(which='minor',color='lightgrey')
 
     plt.tight_layout()
+    plt.show()
     plt.savefig(image_path + 'spectral_anal_semilog.png', dpi=200, bbox_inches='tight')
     plt.close()
 
 
 # log log
     fig=plt.figure(figsize=(20,10))
-    ax = fig.add_subplot(121)
+    ax = fig.add_subplot(111)
     # ax.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
     # ax.spines['top'].set_color('none')
     # ax.spines['bottom'].set_color('none')
@@ -475,7 +481,7 @@ def main():
     # coords={'time': data.index}, 
     # dims=["time"])
 
-    fffo, hepyao, conflim = spec_sum(data_raw_xr/100,smo=999,win=1)
+    fffo, hepyao, conflim = spec_sum(serie['ssh'], smo=999, win=1)
     fffo, hepyao = fffo[1:], hepyao[1:]
     chio = conflim[0]; chio=chio[1:]
     cloo = conflim[1]; cloo=cloo[1:]
