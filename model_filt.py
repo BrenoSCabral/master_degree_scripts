@@ -27,9 +27,9 @@ def filtra_reanalise(model):
 
     filtered_ds = xr.DataArray(
                 filtered_model,
-                coords=model['eta_t'].coords,
-                dims=model['eta_t'].dims,
-                attrs=model['eta_t'].attrs
+                coords=model['ssh'].coords,
+                dims=model['ssh'].dims,
+                attrs=model['ssh'].attrs
                 )
 
     return filtered_ds
