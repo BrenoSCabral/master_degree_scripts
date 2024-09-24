@@ -9,6 +9,7 @@ import datetime
 import numpy as np
 import json
 import re
+import matplotlib.pyplot as plt
 
 import sys
 
@@ -191,7 +192,7 @@ def clean_key(key):
     return re.sub(r'[0-9m_ ]+$', '', key)
 
 
-all_data = get_all_available_data('/Users/breno/Documents/Mestrado/resultados/data') # TODO: Precisa mudar aqui de H pra h (deprecated)
+all_data = get_all_available_data() # TODO: Precisa mudar aqui de H pra h (deprecated)
 
 series = join_series(all_data)
 series = {clean_key(key): value for key, value in series.items()}
@@ -243,13 +244,16 @@ for point in fseries:
         ind_data = data.index
 
         common_dates = ind_data.intersection(ind_reanal)
+        if filtered_reanal_normalized['time'].to_index().duplicated().sum() >0:
+            filtered_reanal_normalized = filtered_reanal_normalized.sel(time=~filtered_reanal_normalized['time'].to_index().duplicated())
+
         filtered_reanal_common = filtered_reanal_normalized.sel(time=common_dates)
 
         # agora basta fazer a correlacao de cada ponto, plotar, e exportar a latlon do ponto de maior correlacao
 
         # if len(data) > len(filtered_reanal_common['time']):
         #     data = data[:-1]
-            
+
         # cortando caso um seja maior que o outro
         if len(filtered_reanal_common.values) > len(data):
             tf2 = tf - datetime.timedelta(days=len(filtered_reanal_common.values) - len(data))
@@ -276,5 +280,7 @@ for point in fseries:
         
         with open(json_path, 'w') as f:
             json.dump(json_dict, f)
+
+        plt.close('all')
 
     # esse loop abaixo pega as metricas estatisticas considerando o ponto de maxima correlacao
