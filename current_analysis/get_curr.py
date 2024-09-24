@@ -35,21 +35,22 @@ import general_plots as gplots
 import matplotlib
 matplotlib.use('TkAgg')
 
-model_path = '/data3/MOVAR/modelos/REANALISES/'
-# model_path = '/Users/breno/model_data/'
+# model_path = '/data3/MOVAR/modelos/REANALISES/'
+model_path = '/Users/breno/model_data/BRAN_CURR'
 fig_folder = '/home/bcabral/mestrado/fig/isobaths_50/'
 
 
-models =  ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']
+
+# models =  ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']
 
 def get_reanalisys(lat, lon, model, di, df):
     reanal = {}
     years = list(set([di.year, df.year]))
     for year in years:
-        # reanal[year] = set_reanalisys_dims(xr.open_mfdataset(model_path + model + '/*.nc')
-        #                                    , model)        
-        reanal[year] = set_reanalisys_curr_dims(xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
-                                            , model)
+        reanal[year] = set_reanalisys_curr_dims(xr.open_mfdataset(model_path + '/*.nc')
+                                           , model)        
+        # reanal[year] = set_reanalisys_curr_dims(xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
+        #                                     , model)
         
     reanalisys = xr.concat(list(reanal.values()), dim="time")
     model_series = reanalisys.sel(latitude=lat, longitude=lon, depth=0, method='nearest')
@@ -195,6 +196,18 @@ def collect_curr_data(pts, di, df, model):
     })
     
     return df_ssh
+
+''' 
+<TODO>
+1 - Definir as 7 linhas que vou pegar as secoes transversais
+1.1 - Sul, Antes, Durante e Após a redução da plataforma, Bahia, Sergipe, Fortaleza
+2 - Definir um quadrilatero com esta linha como diagonal e pegar a corrente dentro deste quadrilatero
+3 - interpolar linearmente este dado de corrente para obter uma linha mais "reta"
+4 - selecionar os pontos que ficam em cima da linha definida
+5 - Comparar como ficam os resultados se eu filtrar antes ou depois de compor a direcao along-shore
+6 - comparar os resultados do along-shore filtrado com o nao filtrado e observar como a passagem da OCC influencia a CB
+7 - Observar o decaimento desta influencia cross-shore
+'''
 
 year = 2015
 for model in models:
