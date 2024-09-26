@@ -28,7 +28,7 @@ model_path = '/data3/MOVAR/modelos/REANALISES/'
 data_path =  f'/home/bcabral/mestrado/data/'
 fig_folder = f'/home/bcabral/mestrado/fig/'
 
-def filt_data(data, sel_hour = 21):
+def filt_data(data, sel_hour = 0):
     array_ssh = np.asarray(data['ssh'])
     data_to_filt = np.concatenate((np.full(len(array_ssh)//2, array_ssh.mean()), array_ssh))
     datetime_to_filt = pd.date_range(end=data.index[-1], periods=len(data_to_filt), freq='H')
@@ -205,6 +205,11 @@ fseries = {clean_key(key): value for key, value in fseries.items()}
 
 for point in fseries:
     print(point)
+    # tirando pontos dentro de estuario ou com series esquisitas
+    if point == 'CANIVETE' or point == 'CAPITANIA DE SALVADOR' or point == 'CIA DOCAS DO PORTO DE SANTANA' \
+        or point == 'IGARAPÉ GRD DO CURUÁ' or point == 'PAGA DÍVIDAS I' or point == 'PORTO DE VILA DO CONDE' \
+        or point == 'Salvador_glossbrasil' or point == 'SERRARIA RIO MATAPI':
+        continue
     json_path = f'/home/bcabral/mestrado/{point}.json'
     data = fseries[point]
     years = range(data.index[0].year, data.index[-1].year +1)
@@ -213,7 +218,10 @@ for point in fseries:
     lon = series[point]['lon'][0]
 
     # esse loop abaixo pega a correlacao em area
-
+    # fazendo de novo a parte dos 25 pontos TEM QUE COMENTAR O FOR DOS MODELOS!:
+    get_correlation_matrix(lat, lon, data['ssh'], data.index[0], data.index[-1], f'/home/bcabral/mestrado/{point}_25pts.json',
+                    years, point)
+                    
     for model in ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']:
         json_dict = {}
         print('pegando ponto de maior correlacao em ' + model)
@@ -262,6 +270,7 @@ for point in fseries:
             data = data[:-(len(data) - len(filtered_reanal_common.values))]
 
 
+
         correlation = np.empty((len(filtered_reanal_common.latitude), len(filtered_reanal_common.longitude)))
         latlons = np.zeros((len(filtered_reanal_common.latitude), len(filtered_reanal_common.longitude)), dtype=object)
         for i in range(len(filtered_reanal_common.latitude)):
@@ -276,11 +285,11 @@ for point in fseries:
         max_index = np.unravel_index(np.argmax(correlation, axis=None), correlation.shape)
 
         json_dict[model] = latlons[max_index]
-        mapa_corr(lon, lat, reanal_subset, correlation, model, point, fig_folder)
+        mapa_corr(lon, lat, reanal_subset, correlation, model +'MEIA_NOITE' , point, fig_folder)
         
-        with open(json_path, 'w') as f:
-            json.dump(json_dict, f)
-
         plt.close('all')
+    with open(json_path, 'w') as f:
+        json.dump(json_dict, f)
+
 
     # esse loop abaixo pega as metricas estatisticas considerando o ponto de maxima correlacao
