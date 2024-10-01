@@ -233,10 +233,10 @@ for point in fseries:
             
         reanalisys = xr.concat(list(reanal.values()), dim="time")
 
-        reanal_subset = reanalisys.where((reanalisys.latitude < lat +1) & 
-                              (reanalisys.longitude > lon -1) &
-                              (reanalisys.latitude > lat -1) & 
-                              (reanalisys.longitude < lon +1) ,
+        reanal_subset = reanalisys.where((reanalisys.latitude < lat +0.5) & 
+                              (reanalisys.longitude > lon -0.5) &
+                              (reanalisys.latitude > lat -0.5) & 
+                              (reanalisys.longitude < lon +0.5) ,
                               drop=True)
         reanal_subset = reanal_subset.sel(time=slice(t0, tf))
 
@@ -293,3 +293,21 @@ for point in fseries:
 
 
     # esse loop abaixo pega as metricas estatisticas considerando o ponto de maxima correlacao
+
+
+
+#     frea = []
+#     for i in range(len(model_subset.latitude)):
+#         for j in range(len(model_subset.longitude)):
+#             model_series = model_subset.isel(latitude=i, longitude=j)
+#             mod_ssh = model_series['ssh'].values
+#             mod_time = model_series['time'].values
+#             mod_band = filtro.filtra_dados(mod_ssh, mod_time, 'band', modelo = True)
+#             frea.append(mod_band)
+
+# filtered_reanal_ensemble[:,0,0].values
+
+# for i in range(len(frea)):
+#     j = i//10
+#     k = i - j*10
+#     print((frea[i] != filtered_reanal_ensemble[:,j,k].values).sum())
