@@ -30,7 +30,7 @@ def set_reanalisys_curr_dims(reanalisys, name, lat_name = 'latitude', lon_name =
     elif name == 'HYCOM':
         reanalisys = reanalisys.rename({'lat': lat_name, 'lon': lon_name, 'water_u':u_name, 'water_v':v_name})
     elif name == 'BRAN':
-        reanalisys = reanalisys.rename({'st_ocean':depth_name, 'yt_ocean': lat_name, 'xt_ocean': lon_name, 'Time':time_name})
+        reanalisys = reanalisys.rename({'st_ocean':depth_name, 'yu_ocean': lat_name, 'xu_ocean': lon_name, 'Time':time_name})
 
 
     return reanalisys
