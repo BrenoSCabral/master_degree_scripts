@@ -339,7 +339,7 @@ for section in sections:
     section_v = np.array(section_v)
 
     # # Obter os valores de profundidade
-    # depths = reanal_subset['depth'].values
+    depths = reanal_subset['depth'].values
 
 
     # # Criar um gráfico de contorno para v
@@ -384,5 +384,5 @@ for section in sections:
     plt.ylabel('Profundidade (m)')
     plt.gca().invert_yaxis()  # Inverter o eixo y para profundidade
     plt.tight_layout()
-    plt.savefig(f'/home2/bcabral/mestrado/fig/curr_section_raw/{model}_{num_sec}')
+    plt.savefig(f'/home/bcabral/mestrado/fig/curr_section_raw/{model}_{num_sec}')
     plt.close()
