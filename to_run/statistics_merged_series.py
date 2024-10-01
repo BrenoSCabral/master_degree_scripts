@@ -252,8 +252,8 @@ def get_data_stats(series, place):
     gen_stats_point = general_stats(series)
     gen_stat_df = pd.DataFrame(gen_stats_point, index=['SOMA', 'MÉDIA', 	'DESVPAD', 'MEDIANA', 'MÁX.', 'MÍN']).round(2)
     # gen_stat_df = gen_stat_df.rename(columns={0: place})
-    os.makedirs(f'{fig_folder}/stats/{place}/', exist_ok=True)
-    gen_stat_df.to_csv(f'{fig_folder}/stats/{place}/gen_{place}.csv')
+    os.makedirs(f'{fig_folder}/n_stats/{place}/', exist_ok=True)
+    gen_stat_df.to_csv(f'{fig_folder}/n_stats/{place}/gen_{place}.csv')
 
 
 def get_reanalisys_stats(data, reanalisys, place, model):
@@ -268,10 +268,10 @@ def get_reanalisys_stats(data, reanalisys, place, model):
     gen_stat_df = pd.DataFrame(gen_stats, index=['SOMA', 'MÉDIA', 	'DESVPAD', 'MEDIANA', 'MÁX.', 'MÍN']).round(2)
 
     # TODO: acho que seria mais legal juntar todas essas metricas em um so arquivo. Mais facil mexer depois
-    os.makedirs(f'{fig_folder}/stats/{place}/', exist_ok=True)
-    stat_df.to_csv(f'{fig_folder}/stats/{place}/comp_{model}.csv')
-    dep_stat_df.to_csv(f'{fig_folder}/stats/{place}/dep_{model}.csv')
-    gen_stat_df.to_csv(f'{fig_folder}/stats/{place}/gen_{model}.csv')
+    os.makedirs(f'{fig_folder}/n_stats/{place}/', exist_ok=True)
+    stat_df.to_csv(f'{fig_folder}/n_stats/{place}/comp_{model}.csv')
+    dep_stat_df.to_csv(f'{fig_folder}/n_stats/{place}/dep_{model}.csv')
+    gen_stat_df.to_csv(f'{fig_folder}/n_stats/{place}/gen_{model}.csv')
 
 
 
@@ -335,46 +335,47 @@ for point in fseries:
     # esse loop abaixo o ponto indicado pelo json como maior correlacao para a reanalise
     get_data_stats(data['ssh'], point)
 
-    # fazendo de novo a parte dos 25 pontos TEM QUE COMENTAR O FOR DOS MODELOS!:
-    get_correlation_matrix(lat, lon, data['ssh'], data.index[0], data.index[-1], f'/home/bcabral/mestrado/{point}_25pts.json',
-                    years, point)
-
     for model in ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']:
-        print('pegando estatisticas para ' + model)
-        point_info = json.load(open(f'/home/bcabral/mestrado/{point}.json'))
-        reanal = {}
-        for year in years:
-            reanal[year] = set_reanalisys_dims(xr.open_mfdataset(model_path + model + '/SSH/' + str(year)  + '/*.nc')
-                                                , model)
-            
-        reanalisys = xr.concat(list(reanal.values()), dim="time")
-        latlon = point_info[model]
-        model_series = reanalisys.sel(latitude=latlon[0], longitude=latlon[1], method='nearest')
-        model_series = model_series.sel(time=slice(t0, tf))
+        try:
+            print('pegando estatisticas para ' + model)
+            point_info = json.load(open(f'/home/bcabral/mestrado/{point}_25pts.json'))
+            reanal = {}
+            for year in years:
+                reanal[year] = set_reanalisys_dims(xr.open_mfdataset(model_path + model + '/SSH/' + str(year)  + '/*.nc')
+                                                    , model)
+                
+            reanalisys = xr.concat(list(reanal.values()), dim="time")
+            latlon = point_info[model]
+            model_series = reanalisys.sel(latitude=latlon[0], longitude=latlon[1], method='nearest')
+            model_series = model_series.sel(time=slice(t0, tf))
 
-        filtered_reanal = model_filt.filtra_reanalise(model_series)
+            filtered_reanal = model_filt.filtra_reanalise(model_series)
 
-        filtered_reanal_normalized = filtered_reanal.assign_coords(time=filtered_reanal['time'].to_index().normalize())
-
-
-        # dropar o modelo nos momentos em que eu nao tiver dado
-        ind_reanal = filtered_reanal_normalized['time'].to_index()
-        ind_data = data.index
-
-        common_dates = ind_data.intersection(ind_reanal)
-        if filtered_reanal_normalized['time'].to_index().duplicated().sum() >0:
-            filtered_reanal_normalized = filtered_reanal_normalized.sel(time=~filtered_reanal_normalized['time'].to_index().duplicated())
-
-        filtered_reanal_common = filtered_reanal_normalized.sel(time=common_dates)
+            filtered_reanal_normalized = filtered_reanal.assign_coords(time=filtered_reanal['time'].to_index().normalize())
 
 
-        # cortando caso um seja maior que o outro
-        if len(filtered_reanal_common.values) > len(data):
-            tf2 = tf - datetime.timedelta(days=len(filtered_reanal_common.values) - len(data))
-            filtered_reanal_common = filtered_reanal_common.sel(time=slice(t0, tf2))
-        elif len(filtered_reanal_common.values) < len(data):
-            data = data[:-(len(data) - len(filtered_reanal_common.values))]
+            # dropar o modelo nos momentos em que eu nao tiver dado
+            ind_reanal = filtered_reanal_normalized['time'].to_index()
+            ind_data = data.index
+
+            common_dates = ind_data.intersection(ind_reanal)
+            if filtered_reanal_normalized['time'].to_index().duplicated().sum() >0:
+                filtered_reanal_normalized = filtered_reanal_normalized.sel(time=~filtered_reanal_normalized['time'].to_index().duplicated())
+
+            filtered_reanal_common = filtered_reanal_normalized.sel(time=common_dates)
 
 
-        # agora basta extrair as metricas estatisticas:
-        get_reanalisys_stats(data['ssh'], filtered_reanal_common.values, point, model)
+            # cortando caso um seja maior que o outro
+            if len(filtered_reanal_common.values) > len(data):
+                tf2 = tf - datetime.timedelta(days=len(filtered_reanal_common.values) - len(data))
+                filtered_reanal_common = filtered_reanal_common.sel(time=slice(t0, tf2))
+            elif len(filtered_reanal_common.values) < len(data):
+                data = data[:-(len(data) - len(filtered_reanal_common.values))]
+
+
+            # agora basta extrair as metricas estatisticas:
+            get_reanalisys_stats(data['ssh'], filtered_reanal_common.values, point, model)
+        except Exception as e:
+            print('Nao conseguiu fazer :(')
+            print(e)
+            print('continuando!')
