@@ -35,8 +35,8 @@ import general_plots as gplots
 import matplotlib
 matplotlib.use('TkAgg')
 
-# model_path = '/data3/MOVAR/modelos/REANALISES/'
-model_path = '/Users/breno/model_data/BRAN_CURR'
+model_path = '/data3/MOVAR/modelos/REANALISES/'
+# model_path = '/Users/breno/model_data/BRAN_CURR'
 fig_folder = '/home/bcabral/mestrado/fig/isobaths_50/'
 
 
@@ -149,6 +149,41 @@ def get_points():
     return pd.DataFrame(pts)
 
 
+def get_cross_points():
+    pts_cross = pd.DataFrame({
+        'lon':{0:-49.675,
+            1: -47.52,
+            2: -46.825,
+            3: -44.63,
+            4: -42.541667,
+            5: -40.89,
+            6: -40.281667,
+            7: -38.61,
+            8:-38.843861,
+            9: -38.23,
+            10:-36.918087,
+            11: -36.44,
+            12:-35.099074,
+            13: -34.76},
+        'lat':{0:-30.003125,
+            1: - 31.05,
+            2: - 25,
+            3: -27.67,
+            4: -23,
+            5: -26.92,
+            6: -21,
+            7: -21.92,
+            8: -15,
+            9: -14.99,
+            10:-11,
+            11: -11.54,
+            12:- 5,
+            13: -4.9}
+        }
+    )
+    return pts_cross
+
+
 def collect_ssh_data(pts, di, df, model):
     ssh_data = []
     lats = []
@@ -172,6 +207,7 @@ def collect_ssh_data(pts, di, df, model):
     })
     
     return df_ssh
+
 
 def collect_curr_data(pts, di, df, model):
     ssh_data = []
@@ -197,21 +233,156 @@ def collect_curr_data(pts, di, df, model):
     
     return df_ssh
 
+
+def interpolate_points(start, end, num_points):
+    if num_points % 2 !=0:
+        print('selecione um numero par de pontos!')
+        num_points -= 1 
+    lons = np.linspace(start[0], end[0], num_points)
+    lats = np.linspace(start[1], end[1], num_points)
+    return pd.DataFrame({'lon': lons, 'lat': lats})
+
+
+def perpendicular_line(lon, lat, angle, length=1):
+    angle_rad = np.deg2rad(angle)
+    dlon = length * np.cos(angle_rad)
+    dlat = length * np.sin(angle_rad)
+    return [(lon + dlon, lat + dlat), (lon, lat)]
+
+def CalcGeographicAngle(arith):
+    return (360 - arith + 90) % 360
+
+
 ''' 
 <TODO>
-1 - Definir as 7 linhas que vou pegar as secoes transversais
-1.1 - Sul, Antes, Durante e Após a redução da plataforma, Bahia, Sergipe, Fortaleza
-2 - Definir um quadrilatero com esta linha como diagonal e pegar a corrente dentro deste quadrilatero
-3 - interpolar linearmente este dado de corrente para obter uma linha mais "reta"
-4 - selecionar os pontos que ficam em cima da linha definida
+1 OK - Definir as 7 linhas que vou pegar as secoes transversais
+1.1 OK - Sul, Antes, Durante e Após a redução da plataforma, Bahia, Sergipe, Fortaleza
+2 - OK Definir um quadrilatero com esta linha como diagonal e pegar a corrente dentro deste quadrilatero
+3 - +-OK interpolar linearmente este dado de corrente para obter uma linha mais "reta"
+4 - OK selecionar os pontos que ficam em cima da linha definida
 5 - Comparar como ficam os resultados se eu filtrar antes ou depois de compor a direcao along-shore
 6 - comparar os resultados do along-shore filtrado com o nao filtrado e observar como a passagem da OCC influencia a CB
 7 - Observar o decaimento desta influencia cross-shore
 '''
 
-year = 2015
-for model in models:
-    reanal = xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
-    print('______________________________')
-    print(model, list(reanal.indexes))# list(reanal.keys()))
+# year = 2015
+model = 'BRAN'
 
+
+# reanal = xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
+# print('______________________________')
+# print(model, list(reanal.indexes))# list(reanal.keys()))
+
+
+reanal = {}
+years = [2015]
+for year in years:
+    reanal[year] = set_reanalisys_curr_dims(xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
+                                        , model)
+    
+reanalisys = xr.concat(list(reanal.values()), dim="time")
+
+# define a linha que eu vou plotar
+pts_cross = get_cross_points()
+sections = []
+for i in range(len(pts_cross)):
+    if i%2 != 0:
+        continue
+    start = (pts_cross.iloc[i]['lon'], pts_cross.iloc[i]['lat'])
+    end = (pts_cross.iloc[i + 1]['lon'], pts_cross.iloc[i + 1]['lat'])
+
+    cross_line = interpolate_points(start, end, 10)
+
+    sections.append(cross_line)
+
+num_sec = 0
+for section in sections:
+    num_sec += 1
+    print(f'iniciando secao {num_sec}')
+    # section = sections[0]
+
+    lat_i = section['lat'].min() - 0.3
+    lat_f = section['lat'].max() + 0.3
+    lon_i = section['lon'].min() - 0.3
+    lon_f = section['lon'].max() + 0.3
+
+    # preciso pegar agora o quadrilatero em torno da linha pra fazer a interpolacao
+    reanal_subset = reanalisys.where((reanalisys.latitude < lat_f) & 
+                                (reanalisys.longitude < lon_f) &
+                                (reanalisys.latitude > lat_i) & 
+                                (reanalisys.longitude > lon_i) ,
+                                drop=True)
+
+    # dependendo do modelo que for usar, acho que nao precisa nem interpolar. Se for necessario, achei essa resposta
+    # -> https://stackoverflow.com/questions/73455966/regrid-xarray-dataset-to-a-grid-that-is-2-5-times-coarser
+
+
+
+    # Supondo que reanal_subset e section já estão carregados
+
+    # Inicializa listas para armazenar os dados
+    section_u = []
+    section_v = []
+
+    # Extrair os dados para cada ponto na linha definida por section
+    for index, row in section.iterrows():
+        lon = row['lon']
+        lat = row['lat']
+        
+        # Seleciona os dados em função da longitude e latitude, e calcula a média ao longo do tempo
+        section_u.append(reanal_subset['u'].sel(longitude=lon, latitude=lat, method='nearest').mean(dim='time').values)
+        section_v.append(reanal_subset['v'].sel(longitude=lon, latitude=lat, method='nearest').mean(dim='time').values)
+
+
+    # Converter para arrays numpy
+    section_u = np.array(section_u)
+    section_v = np.array(section_v)
+
+    # # Obter os valores de profundidade
+    # depths = reanal_subset['depth'].values
+
+
+    # # Criar um gráfico de contorno para v
+    # plt.figure(figsize=(10, 6))
+
+    # # Plotar a seção de v
+    # plt.contourf(section['lon'], depths, section_v.T, levels=50, cmap='viridis')  # Transpondo para profundidade vs longitude
+    # plt.colorbar(label='v (m/s)')
+    # plt.title('Seção de v ao longo da linha definida por section (média ao longo do tempo)')
+    # plt.xlabel('Longitude')
+    # plt.ylabel('Profundidade (m)')
+    # plt.gca().invert_yaxis()  # Inverter o eixo y para profundidade
+    # plt.tight_layout()
+    # plt.show()
+
+
+
+
+
+    delta_lon = section['lon'].values[-1] - section['lon'].values[0]
+    delta_lat = section['lat'].values[-1] - section['lat'].values[0]
+    theta_rad = np.arctan2(delta_lat, delta_lon) + np.pi/2# Ângulo em radianos
+    theta_deg = np.degrees(theta_rad)  # Convertendo para graus
+
+    # theta_geo = CalcGeographicAngle(theta_deg)
+    # theta_geo_rad = np.radians(theta_geo)  # Converter de volta para radianos
+
+    # ou compoe a intensidade e multiplica pelo cos do angulo
+    section_int = np.sqrt(section_u **2 + section_v**2)
+    section_int_rotated = section_int * np.cos(theta_rad)
+
+    # u_rotated = section_u * np.cos(theta_adj) + section_v * np.sin(theta_adj)
+    # v_rotated = -section_u * np.sin(theta_adj) + section_v * np.cos(theta_adj)
+
+    plt.figure(figsize=(10, 6))
+
+    # Plotar a seção
+    plt.contourf(section['lon'], depths, section_int_rotated.T, levels=50, cmap='viridis')  # Transpondo para profundidade vs longitude
+    plt.colorbar(label='Int. (m/s)')
+    plt.title('Média de velocidade normal à seção')
+    plt.xlabel('Longitude')
+    plt.ylabel('Profundidade (m)')
+    plt.gca().invert_yaxis()  # Inverter o eixo y para profundidade
+    plt.tight_layout()
+    plt.savefig(f'/home2/bcabral/mestrado/fig/curr_section_raw/{model}_{num_sec}')
+    plt.close()
