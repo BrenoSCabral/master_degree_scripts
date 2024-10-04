@@ -34,3 +34,30 @@ def filtra_reanalise(model):
 
     return filtered_ds
 
+
+def filtra_reanalise_u(model):
+    b, a = passa_banda()
+    filtered_model = signal.filtfilt(b, a, model['u'], axis=0)
+
+    filtered_ds = xr.DataArray(
+                filtered_model,
+                coords=model['u'].coords,
+                dims=model['u'].dims,
+                attrs=model['u'].attrs
+                )
+
+    return filtered_ds
+
+
+def filtra_reanalise_v(model):
+    b, a = passa_banda()
+    filtered_model = signal.filtfilt(b, a, model['v'], axis=0)
+
+    filtered_ds = xr.DataArray(
+                filtered_model,
+                coords=model['v'].coords,
+                dims=model['v'].dims,
+                attrs=model['v'].attrs
+                )
+
+    return filtered_ds
