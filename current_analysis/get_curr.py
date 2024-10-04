@@ -28,7 +28,8 @@ sys.path.append(
 # my files
 from read_reanalisys import set_reanalisys_curr_dims
 import filtro
-import plot_hovmoller as ph
+# import plot_hovmoller as ph
+import model_filt
 import stats
 import general_plots as gplots
 
@@ -385,4 +386,100 @@ for section in sections:
     plt.gca().invert_yaxis()  # Inverter o eixo y para profundidade
     plt.tight_layout()
     plt.savefig(f'/home/bcabral/mestrado/fig/curr_section_raw/{model}_{num_sec}')
+    plt.close()
+
+# fazendo a mesma analise so que agora filtrado:
+
+reanal_filt = model_filt.filtra_reanalise(reanal_subset)
+
+num_sec = 0
+for section in sections:
+    num_sec += 1
+    print(f'iniciando secao {num_sec}')
+    # section = sections[0]
+
+    lat_i = section['lat'].min() - 0.3
+    lat_f = section['lat'].max() + 0.3
+    lon_i = section['lon'].min() - 0.3
+    lon_f = section['lon'].max() + 0.3
+
+    # preciso pegar agora o quadrilatero em torno da linha pra fazer a interpolacao
+    reanal_subset = reanal_filt.where((reanal_filt.latitude < lat_f) & 
+                                (reanal_filt.longitude < lon_f) &
+                                (reanal_filt.latitude > lat_i) & 
+                                (reanal_filt.longitude > lon_i) ,
+                                drop=True)
+
+    # dependendo do modelo que for usar, acho que nao precisa nem interpolar. Se for necessario, achei essa resposta
+    # -> https://stackoverflow.com/questions/73455966/regrid-xarray-dataset-to-a-grid-that-is-2-5-times-coarser
+
+
+
+    # Supondo que reanal_subset e section já estão carregados
+
+    # Inicializa listas para armazenar os dados
+    section_u = []
+    section_v = []
+
+    # Extrair os dados para cada ponto na linha definida por section
+    for index, row in section.iterrows():
+        lon = row['lon']
+        lat = row['lat']
+        
+        # Seleciona os dados em função da longitude e latitude, e calcula a média ao longo do tempo
+        section_u.append(reanal_subset['u'].sel(longitude=lon, latitude=lat, method='nearest').mean(dim='time').values)
+        section_v.append(reanal_subset['v'].sel(longitude=lon, latitude=lat, method='nearest').mean(dim='time').values)
+
+
+    # Converter para arrays numpy
+    section_u = np.array(section_u)
+    section_v = np.array(section_v)
+
+    # # Obter os valores de profundidade
+    depths = reanal_subset['depth'].values
+
+
+    # # Criar um gráfico de contorno para v
+    # plt.figure(figsize=(10, 6))
+
+    # # Plotar a seção de v
+    # plt.contourf(section['lon'], depths, section_v.T, levels=50, cmap='viridis')  # Transpondo para profundidade vs longitude
+    # plt.colorbar(label='v (m/s)')
+    # plt.title('Seção de v ao longo da linha definida por section (média ao longo do tempo)')
+    # plt.xlabel('Longitude')
+    # plt.ylabel('Profundidade (m)')
+    # plt.gca().invert_yaxis()  # Inverter o eixo y para profundidade
+    # plt.tight_layout()
+    # plt.show()
+
+
+
+
+
+    delta_lon = section['lon'].values[-1] - section['lon'].values[0]
+    delta_lat = section['lat'].values[-1] - section['lat'].values[0]
+    theta_rad = np.arctan2(delta_lat, delta_lon) + np.pi/2# Ângulo em radianos
+    theta_deg = np.degrees(theta_rad)  # Convertendo para graus
+
+    # theta_geo = CalcGeographicAngle(theta_deg)
+    # theta_geo_rad = np.radians(theta_geo)  # Converter de volta para radianos
+
+    # ou compoe a intensidade e multiplica pelo cos do angulo
+    section_int = np.sqrt(section_u **2 + section_v**2)
+    section_int_rotated = section_int * np.cos(theta_rad)
+
+    # u_rotated = section_u * np.cos(theta_adj) + section_v * np.sin(theta_adj)
+    # v_rotated = -section_u * np.sin(theta_adj) + section_v * np.cos(theta_adj)
+
+    plt.figure(figsize=(10, 6))
+
+    # Plotar a seção
+    plt.contourf(section['lon'], depths, section_int_rotated.T, levels=50, cmap='viridis')  # Transpondo para profundidade vs longitude
+    plt.colorbar(label='Int. (m/s)')
+    plt.title('Média de velocidade normal à seção')
+    plt.xlabel('Longitude')
+    plt.ylabel('Profundidade (m)')
+    plt.gca().invert_yaxis()  # Inverter o eixo y para profundidade
+    plt.tight_layout()
+    plt.savefig(f'/home/bcabral/mestrado/fig/curr_section_filt/{model}_{num_sec}')
     plt.close()
