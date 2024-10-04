@@ -390,8 +390,6 @@ for section in sections:
 
 # fazendo a mesma analise so que agora filtrado:
 
-u_filt = filtra_reanalise_u(reanalisys)
-v_filt = filtra_reanalise_v(reanalisys)
 
 num_sec = 0
 for section in sections:
@@ -399,17 +397,20 @@ for section in sections:
     print(f'iniciando secao {num_sec}')
     # section = sections[0]
 
-    lat_i = section['lat'].min() - 0.3
-    lat_f = section['lat'].max() + 0.3
-    lon_i = section['lon'].min() - 0.3
-    lon_f = section['lon'].max() + 0.3
+    lat_i = section['lat'].min() - 0.2
+    lat_f = section['lat'].max() + 0.2
+    lon_i = section['lon'].min() - 0.2
+    lon_f = section['lon'].max() + 0.2
 
-    # preciso pegar agora o quadrilatero em torno da linha pra fazer a interpolacao
-    reanal_subset = reanal_filt.where((reanal_filt.latitude < lat_f) & 
-                                (reanal_filt.longitude < lon_f) &
-                                (reanal_filt.latitude > lat_i) & 
-                                (reanal_filt.longitude > lon_i) ,
+    # preciso pegar agora o quadrilatero em torno da linha pra fazer a interpolacao -> isso se tornou obsoleto
+    reanal_subset = reanalisys.where((reanalisys.latitude < lat_f) & 
+                                (reanalisys.longitude < lon_f) &
+                                (reanalisys.latitude > lat_i) & 
+                                (reanalisys.longitude > lon_i) ,
                                 drop=True)
+    
+    u_filt = model_filt.filtra_reanalise_u(reanal_subset)
+    v_filt = model_filt.filtra_reanalise_v(reanal_subset)
 
     # dependendo do modelo que for usar, acho que nao precisa nem interpolar. Se for necessario, achei essa resposta
     # -> https://stackoverflow.com/questions/73455966/regrid-xarray-dataset-to-a-grid-that-is-2-5-times-coarser
@@ -428,8 +429,8 @@ for section in sections:
         lat = row['lat']
         
         # Seleciona os dados em função da longitude e latitude, e calcula a média ao longo do tempo
-        section_u.append(reanal_subset['u'].sel(longitude=lon, latitude=lat, method='nearest').mean(dim='time').values)
-        section_v.append(reanal_subset['v'].sel(longitude=lon, latitude=lat, method='nearest').mean(dim='time').values)
+        section_u.append(u_filt.sel(longitude=lon, latitude=lat, method='nearest').mean(dim='time').values)
+        section_v.append(v_filt.sel(longitude=lon, latitude=lat, method='nearest').mean(dim='time').values)
 
 
     # Converter para arrays numpy
@@ -437,25 +438,8 @@ for section in sections:
     section_v = np.array(section_v)
 
     # # Obter os valores de profundidade
+    # isso aqui deve ser movido pra fora do loop, essa variavel nao muda
     depths = reanal_subset['depth'].values
-
-
-    # # Criar um gráfico de contorno para v
-    # plt.figure(figsize=(10, 6))
-
-    # # Plotar a seção de v
-    # plt.contourf(section['lon'], depths, section_v.T, levels=50, cmap='viridis')  # Transpondo para profundidade vs longitude
-    # plt.colorbar(label='v (m/s)')
-    # plt.title('Seção de v ao longo da linha definida por section (média ao longo do tempo)')
-    # plt.xlabel('Longitude')
-    # plt.ylabel('Profundidade (m)')
-    # plt.gca().invert_yaxis()  # Inverter o eixo y para profundidade
-    # plt.tight_layout()
-    # plt.show()
-
-
-
-
 
     delta_lon = section['lon'].values[-1] - section['lon'].values[0]
     delta_lat = section['lat'].values[-1] - section['lat'].values[0]
