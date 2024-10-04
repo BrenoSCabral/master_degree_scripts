@@ -390,7 +390,8 @@ for section in sections:
 
 # fazendo a mesma analise so que agora filtrado:
 
-reanal_filt = model_filt.filtra_reanalise(reanal_subset)
+u_filt = filtra_reanalise_u(reanalisys)
+v_filt = filtra_reanalise_v(reanalisys)
 
 num_sec = 0
 for section in sections:
