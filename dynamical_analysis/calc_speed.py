@@ -16,26 +16,23 @@ import matplotlib.dates as mdates
 
 
 # my files
+sys.path.append(
+    '../'
+)
 from read_reanalisys import set_reanalisys_dims
 import filtro
-sys.path.append(
-    'old'
-)
-sys.path.append(
-    'dynamical_analysis'
-)
 import plot_hovmoller as ph
-import stats
-import general_plots as gplots
+# import stats
+# import general_plots as gplots
 
 import matplotlib
-# matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 
 
 
 model_path = '/data3/MOVAR/modelos/REANALISES/'
 # model_path = '/Users/breno/model_data/'
-fig_folder = '/home/bcabral/mestrado/fig/isobaths_50/'
+fig_folder = '/home/bcabral/mestrado/fig/hovemoller/'
 
 
 def get_reanalisys(lat, lon, model, di, df):
@@ -222,23 +219,24 @@ def collect_ssh_data(pts, di, df, model):
 # # testar depois no ano de 2013 por ter um el nino fraco
 # # link pra consulta -> https://origin.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/ONI_v5.php
 
-
-di = datetime.datetime(2015,1,1)
-df = datetime.datetime(2015,12,31)
-# model = 'BRAN'
 pts = get_points ()
-models =  ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']
+model = 'BRAN'
 
-for model in models:
+for year in range(1995, 2024):
+    di = datetime.datetime(year,1,1)
+    df = datetime.datetime(year,12,31)
+    # model = 'BRAN'
+    # models =  ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']
+
+    # for model in models:
     df_ssh = collect_ssh_data(pts, di, df, model)
 
     # Hovmoller:
     hovmoller_data = ph.prepare_hovmoller_data(df_ssh) * 100 # passando pra m
-    print("comecou os plots")
+    print(f"comecou os plots de {year}")
     ph.plot_hovmoller(hovmoller_data, model=model, fig_folder=fig_folder)
-    ph.plot_hovmoller_u20(hovmoller_data[hovmoller_data.index < -20], model=model, fig_folder=fig_folder)
-    ph.plot_hovmoller_o20(hovmoller_data[hovmoller_data.index >= -20], model=model, fig_folder=fig_folder)
-    print('terminou os plots')
+    # ph.plot_hovmoller_u20(hovmoller_data[hovmoller_data.index < -20], model=model, fig_folder=fig_folder)
+    #ph.plot_hovmoller_o20(hovmoller_data[hovmoller_data.index >= -20], model=model, fig_folder=fig_folder)
 
 
 '''
