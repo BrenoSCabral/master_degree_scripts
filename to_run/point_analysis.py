@@ -8,18 +8,17 @@ import pandas as pd
 import datetime
 
 # my files
-import specs_amp
-import breplot as bplot
-from read_data import read_exported_series, treat_exported_series, all_series, sep_series
-from model_data import get_model_region, get_correlation, mapa_corr
-from read_reanalisys import set_reanalisys_dims
-import filtro
 sys.path.append(
     '../old'
 )
 sys.path.append(
     '../'
 )
+import specs_amp
+from read_data import read_exported_series, treat_exported_series, all_series, sep_series
+from model_data import get_model_region, get_correlation, mapa_corr
+from read_reanalisys import set_reanalisys_dims
+import filtro
 import stats
 import general_plots as gplots
 
@@ -284,16 +283,17 @@ def sep_series_anal():
             lat, lon = data['lat'][0], data['lon'][0]
             data_filt = filt_data(data)
 
-            gplots.plot_time_series(data['ssh'], 'Série Temporal de ' + point, f'{fig_folder}/ponto_serie/', point)
+            # gplots.plot_time_series(data['ssh'], 'Série Temporal de ' + point, f'{fig_folder}/ponto_serie/', point)
             # nomear eixos (cm e data)
-            gplots.plot_spectrum(data['ssh'], f'Espectro de {point}', f'{fig_folder}/spectra/{point}/', f'spec_{point}')
+            # gplots.plot_spectrum(data['ssh'], f'Espectro de {point}', f'{fig_folder}/spectra/{point}/', f'spec_{point}')
             # tirar label
-            gplots.plot_double_spectrum(data['ssh'], data_filt, f'Medido vs Filtrado ({point})', f'{fig_folder}/spectra/{point}/', f'comp_spec_{point}')
-
-            # TODO: em teoria teria que mexer aqui tbm pra ter o mesmo horario no dado e no modelo
-            get_correlation_matrix(lat, lon, data_filt, data.index[0], data.index[-1], f'/home/bcabral/mestrado/{point}.json',
-                                range(data.index[0].year, data.index[-1].year +1), point)
-            get_data_stats(data_filt, point)
+            # gplots.plot_double_spectrum(data['ssh'], data_filt, f'Medido vs Filtrado ({point})', f'{fig_folder}/spectra/{point}/', f'comp_spec_{point}')
+            # TODO: Botar o specs amp
+            os.makedirs(f'/home/bcabral/mestrado/fig/specs_amp/{point}', exist_ok=True)
+            spec_anal(np.asarray(data['ssh']), image_path=f'/home/bcabral/mestrado/fig/specs_amp/{point}/', hourly=True)
+            # get_correlation_matrix(lat, lon, data_filt, data.index[0], data.index[-1], f'/home/bcabral/mestrado/{point}.json',
+            #                     range(data.index[0].year, data.index[-1].year +1), point)
+            # get_data_stats(data_filt, point)
             for model in ['BRAN', 'CGLO', 'FOAM', 'GLOR12', 'GLOR4', 'HYCOM', 'ORAS']:
                 data_filt_m = data_filt
                 print('FAZENDO ESTUDO DO ' + model)
@@ -313,21 +313,24 @@ def sep_series_anal():
                 reanalisys = reanalisys * 100 # pasando pra cm
                 fil_reanalisys = fil_reanalisys * 100 # passando pra cm
 
-                gplots.plot_spectrum(reanalisys, f'Espectro de {point} ({model})', f'{fig_folder}/spectra/{point}/', f'spec_{model}', is_data = False)
+                double_spec_anal(serie_1=np.asarray(data['ssh']), serie_2=reanalisys, image_path=f'/home/bcabral/mestrado/fig/specs_amp/{point}/', label1=point, label2=model)
+
+
+                # gplots.plot_spectrum(reanalisys, f'Espectro de {point} ({model})', f'{fig_folder}/spectra/{point}/', f'spec_{model}', is_data = False)
                 # ajustar a unidade acima
-                gplots.plot_double_spectrum(reanalisys, fil_reanalisys, f'Original vs Filtrado ({point} - {model})',
-                                            f'{fig_folder}/spectra/{point}/',f'comp_spec_{model}', is_data = False)
+                # gplots.plot_double_spectrum(reanalisys, fil_reanalisys, f'Original vs Filtrado ({point} - {model})',
+                #                             f'{fig_folder}/spectra/{point}/',f'comp_spec_{model}', is_data = False)
                 
                 # gplots.compare_spectra(data, reanalisys, f'Espectro {point} vs {model}', f'{fig_folder}/spectra/{point}',f'crosspec_{model}')
-                gplots.compare_spectra(data_filt_m, fil_reanalisys, f'Espectro Filtrado {point} vs {model}', f'{fig_folder}/spectra/{point}/',f'crosspec_filt_{model}')
-                gplots.plot_double_spectrum(data_filt_m, fil_reanalisys, f'Filtrado Ponto vs Modelo ({point} - {model})',
-                                            f'{fig_folder}/spectra/{point}/',f'comp_{point}_{model}', is_data = False)
+                # gplots.compare_spectra(data_filt_m, fil_reanalisys, f'Espectro Filtrado {point} vs {model}', f'{fig_folder}/spectra/{point}/',f'crosspec_filt_{model}')
+                # gplots.plot_double_spectrum(data_filt_m, fil_reanalisys, f'Filtrado Ponto vs Modelo ({point} - {model})',
+                #                             f'{fig_folder}/spectra/{point}/',f'comp_{point}_{model}', is_data = False)
                 
                 
-                gplots.compare_time_series(data_filt_m, fil_reanalisys, f'{point} vs {model}', f'{fig_folder}/series/{point}/',f'{model}')
+                # gplots.compare_time_series(data_filt_m, fil_reanalisys, f'{point} vs {model}', f'{fig_folder}/series/{point}/',f'{model}')
                 # faltam labels e botar na mesma unidade o modelo e o ponto
 
-                get_reanalisys_stats(data_filt_m, fil_reanalisys, point, model)
+                # get_reanalisys_stats(data_filt_m, fil_reanalisys, point, model)
         
         except Exception as e:
             erros[point] = 'ERRO'
