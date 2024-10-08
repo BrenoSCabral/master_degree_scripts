@@ -242,7 +242,7 @@ def specs(xxx, ppp, dt, win, smo, ci):
     return fff, hepya, conflim
 
 
-def spec_sum(da, **kw):
+def spec_sum(xxx, **kw):
     __doc__= """
     parâmetros de entrada para a rotina de cálculo do espectro.
     Dado um Datarray da, extrai:
@@ -260,20 +260,21 @@ def spec_sum(da, **kw):
     smo=kw.pop('smo',31)
     ci=kw.pop('ci',95)
 
-    xxx = da.values
+    # xxx = da.values
     ppp = len(xxx)  # Comprimento da janela de filtro no domínio do tempo
                     # (por enquanto vamos usar o comprimento da série)
-    try:
-        dt = (da.time.to_series(). # tava index no lugar de time
-            diff().astype('timedelta64[m]').
-            fillna(0).astype('int')/60)[1] # Intervalo amostral (inferindo do Dataframe df)
-    except Exception:
-        dt = (da.index.to_series(). 
-            diff().astype('timedelta64[m]').
-            fillna(0).astype('int')/60)[1] # Intervalo amostral (inferindo do Dataframe df)
+    dt = 1
+    # try:
+    #     dt = (da.time.to_series(). # tava index no lugar de time
+    #         diff().astype('timedelta64[m]').
+    #         fillna(0).astype('int')/60)[1] # Intervalo amostral (inferindo do Dataframe df)
+    # except Exception:
+    #     dt = (da.index.to_series(). 
+    #         diff().astype('timedelta64[m]').
+    #         fillna(0).astype('int')/60)[1] # Intervalo amostral (inferindo do Dataframe df)
 
     if kw.pop('hourly'):
-        dt == dt/24      
+        dt = dt/24      
     
     # abaixo eh quando eu jogo o array ao inves do dataframe
 
@@ -289,7 +290,7 @@ def spec_sum(da, **kw):
 
 def sing_plot(hepyao, chio, cloo, prao, image_path):
 
-# log log
+    # log log
     fig=plt.figure(figsize=(20,10))
     ax = fig.add_subplot(111)
     ax.set_ylabel(r'Densidade Espectral [$m^2/dia$]')
@@ -300,6 +301,7 @@ def sing_plot(hepyao, chio, cloo, prao, image_path):
     ax.legend(loc='lower right')
     ax.grid(which='major')
     ax.grid(which='minor',color='lightgrey')
+    # ax.set_xlim([3,30])
 
     plt.tight_layout()
     plt.savefig(image_path + 'spectral_anal_loglog.png', dpi=200, bbox_inches='tight')
@@ -324,7 +326,7 @@ def double_plot(hepyao_1, chio_1, cloo_1, prao_1, hepyao_2, chio_2, cloo_2, prao
     ax.grid(which='minor',color='lightgrey')
 
     plt.tight_layout()
-    plt.savefig(image_path + 'spectral_anal_loglog.png', dpi=200, bbox_inches='tight')
+    plt.savefig(image_path + f'double_spectral_anal_loglog_{label2}.png', dpi=200, bbox_inches='tight')
     plt.close()
 
 
@@ -344,13 +346,13 @@ def spec_anal(serie, image_path, hourly=False):
 
 
 def double_spec_anal(serie_1, serie_2, image_path, label1, label2):
-    fffo_1, hepyao_1, conflim_1 = spec_sum(serie_1, smo=999, win=1)
+    fffo_1, hepyao_1, conflim_1 = spec_sum(serie_1, smo=999, win=1, hourly=True)
     fffo_1, hepyao_1 = fffo_1[1:], hepyao_1[1:]
     chio_1 = conflim_1[0]; chio_1=chio_1[1:]
     cloo_1 = conflim_1[1]; cloo_1=cloo_1[1:]
     prao_1=1/fffo_1
 
-    fffo_2, hepyao_2, conflim_2 = spec_sum(serie_2, smo=999, win=1)
+    fffo_2, hepyao_2, conflim_2 = spec_sum(serie_2, smo=999, win=1, hourly=False)
     fffo_2, hepyao_2 = fffo_2[1:], hepyao_2[1:]
     chio_2 = conflim_2[0]; chio_2=chio_2[1:]
     cloo_2 = conflim_2[1]; cloo_2=cloo_2[1:]
