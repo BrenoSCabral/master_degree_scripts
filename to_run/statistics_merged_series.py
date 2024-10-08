@@ -374,7 +374,7 @@ for point in fseries:
 
 
             # agora basta extrair as metricas estatisticas:
-            get_reanalisys_stats(data['ssh'], filtered_reanal_common.values, point, model)
+            get_reanalisys_stats(data['ssh'], filtered_reanal_common.values * 100, point, model)
         except Exception as e:
             print('Nao conseguiu fazer :(')
             print(e)
