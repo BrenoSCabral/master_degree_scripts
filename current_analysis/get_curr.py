@@ -378,14 +378,14 @@ for section in sections:
     plt.figure(figsize=(10, 6))
 
     # Plotar a seção
-    plt.contourf(section['lon'], depths, section_int_rotated.T, levels=50, cmap='viridis')  # Transpondo para profundidade vs longitude
+    plt.contourf(section['lon'], depths, section_int_rotated.T, levels=50, cmap='bwr')  # Transpondo para profundidade vs longitude
     plt.colorbar(label='Int. (m/s)')
     plt.title('Média de velocidade normal à seção')
     plt.xlabel('Longitude')
     plt.ylabel('Profundidade (m)')
     plt.gca().invert_yaxis()  # Inverter o eixo y para profundidade
     plt.tight_layout()
-    plt.savefig(f'/home/bcabral/mestrado/fig/curr_section_raw/{model}_{num_sec}')
+    plt.savefig(f'/home/bcabral/mestrado/fig/curr_section_raw/cor2_{model}_{num_sec}')
     plt.close()
 
 # fazendo a mesma analise so que agora filtrado:
@@ -459,12 +459,12 @@ for section in sections:
     plt.figure(figsize=(10, 6))
 
     # Plotar a seção
-    plt.contourf(section['lon'], depths, section_int_rotated.T, levels=50, cmap='viridis')  # Transpondo para profundidade vs longitude
+    plt.contourf(section['lon'], depths, section_int_rotated.T, levels=50, cmap='bwr')  # Transpondo para profundidade vs longitude
     plt.colorbar(label='Int. (m/s)')
     plt.title('Média de velocidade normal à seção')
     plt.xlabel('Longitude')
     plt.ylabel('Profundidade (m)')
     plt.gca().invert_yaxis()  # Inverter o eixo y para profundidade
     plt.tight_layout()
-    plt.savefig(f'/home/bcabral/mestrado/fig/curr_section_filt/{model}_{num_sec}')
+    plt.savefig(f'/home/bcabral/mestrado/fig/curr_section_filt/cor2_{model}_{num_sec}')
     plt.close()
