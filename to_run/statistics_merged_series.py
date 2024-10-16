@@ -375,7 +375,8 @@ for point in fseries:
 
 
             # agora basta extrair as metricas estatisticas:
-            get_skill.run_all(data=data, model=filtered_reanal_common, path=f'{fig_folder}/skills/{point}/{model}_')
+            os.makedirs(f'{fig_folder}/skills/{point}/', exist_ok=True)
+            get_skill.run_all(data=data['ssh'], model=filtered_reanal_common.values*100, path=f'{fig_folder}/skills/{point}/{model}_')
             get_reanalisys_stats(data['ssh'], filtered_reanal_common.values * 100, point, model)
         except Exception as e:
             print('Nao conseguiu fazer :(')
