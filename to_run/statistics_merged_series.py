@@ -21,6 +21,7 @@ from read_data import read_exported_series, treat_exported_series, all_series, s
 from read_reanalisys import set_reanalisys_dims
 from model_data import get_model_region, get_correlation, mapa_corr
 import filtro
+import get_skill
 
 
 
@@ -374,6 +375,7 @@ for point in fseries:
 
 
             # agora basta extrair as metricas estatisticas:
+            get_skill.run_all(data=data, model=filtered_reanal_common, path=f'{fig_folder}/skills/{point}/{model}_')
             get_reanalisys_stats(data['ssh'], filtered_reanal_common.values * 100, point, model)
         except Exception as e:
             print('Nao conseguiu fazer :(')
