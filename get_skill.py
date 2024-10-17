@@ -30,7 +30,7 @@ def ss3(data, model):
     # METZGER et al. (2008)
     R = np.corrcoef(data, model)[0,1]
     t1 = R**2
-    t2 = R - (data.std()/ model.std())**2
+    t2 = (R - (data.std()/ model.std()))**2
     t3top = data.mean() - model.mean()
     t3bot = model.std()
     t3 = (t3top/t3bot)**2
