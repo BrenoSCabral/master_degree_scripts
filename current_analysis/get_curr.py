@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 import sys
 import pandas as pd
 import datetime
+import math
 
 
 import cartopy
@@ -250,9 +251,79 @@ def perpendicular_line(lon, lat, angle, length=1):
     dlat = length * np.sin(angle_rad)
     return [(lon + dlon, lat + dlat), (lon, lat)]
 
+
 def CalcGeographicAngle(arith):
     return (360 - arith + 90) % 360
 
+
+def curr_dir(u, v):
+    return (180/np.pi) * math.atan2(u, v) # + 180 -> existe no caso de vento, que eh de onde vem
+
+
+def convert_coords(u, v):
+    # converter as coordenadas nao faz diferenca, fica o mesmo valor.
+    # acho que o que importa mais eh corrigir a orientacao da praia
+    direction = curr_dir(u,v)
+    cart_direction = CalcGeographicAngle(direction)
+    vel = np.sqrt(u**2 + v **2)
+
+    converted_u = vel * np.cos(np.deg2rad(cart_direction))
+    converted_v = vel * np.sin(np.deg2rad(cart_direction))
+    
+    converted_u = converted_u.round(1)
+    if u != converted_u:
+        print('DEU RUIM!U')
+        print(u)
+
+    converted_v = converted_v.round(1)
+    if v != converted_v:
+        print('DEv RvIM!V')
+        print(v)
+    # print(f'''
+    # u = {u}
+    # v = {v}
+
+    # u convertido = {u}
+    # v convertido = {v}
+    # ''')
+
+
+def rotate_current(U, V, theta_deg):
+
+    # theta_deg_conv = theta_deg
+    theta_deg_conv = CalcGeographicAngle(theta_deg) # se converte, o cross shore pos entra na costa, mas
+                                                        # n muda o along shore
+
+    theta_rad = np.deg2rad(theta_deg_conv)
+
+    cos_theta = np.cos(theta_rad)
+
+    sin_theta = np.sin(theta_rad)
+
+    U_prime = cos_theta * U + sin_theta * V  # Along-shore
+
+    V_prime = -sin_theta * U + cos_theta * V  # Cross-shore
+
+    return U_prime, V_prime
+
+
+
+# Ângulos de costa: 0° (N), 45° (NE), 90° (E)
+
+# angles = range(0,360,5)
+
+# results = {angle: rotate_current(U, V, angle) for angle in angles}
+
+# cross = []
+# along = []
+# for i in results.keys():
+#     cross.append(results[i][0])
+#     along.append(results[i][1])
+
+
+# plt.plot(angles, cross)
+# plt.grid()
+# plt.show()
 
 ''' 
 <TODO>
@@ -369,27 +440,30 @@ for section in sections:
     # theta_geo_rad = np.radians(theta_geo)  # Converter de volta para radianos
 
     # ou compoe a intensidade e multiplica pelo cos do angulo
-    section_int = np.sqrt(section_u **2 + section_v**2)
-    section_int_rotated = section_int * np.cos(theta_rad)
+    # section_int = np.sqrt(section_u **2 + section_v**2)
+    # section_int_rotated = section_int * np.cos(theta_rad)
+
 
     # u_rotated = section_u * np.cos(theta_adj) + section_v * np.sin(theta_adj)
     # v_rotated = -section_u * np.sin(theta_adj) + section_v * np.cos(theta_adj)
 
+    along_shore, cross_shore = rotate_current(section_u, section_v, theta_deg)
+
     plt.figure(figsize=(10, 6))
 
     # Plotar a seção
-    plt.contourf(section['lon'], depths, section_int_rotated.T, levels=50, cmap='bwr')  # Transpondo para profundidade vs longitude
+    plt.contourf(section['lon'], depths, along_shore.T, levels=50, cmap='bwr')  # Transpondo para profundidade vs longitude
     plt.colorbar(label='Int. (m/s)')
     plt.title('Média de velocidade normal à seção')
     plt.xlabel('Longitude')
     plt.ylabel('Profundidade (m)')
     plt.gca().invert_yaxis()  # Inverter o eixo y para profundidade
     plt.tight_layout()
-    plt.savefig(f'/home/bcabral/mestrado/fig/curr_section_raw/cor2_{model}_{num_sec}')
+    plt.savefig(f'/home/bcabral/mestrado/fig/curr_section_raw/{model}_{num_sec}')
     plt.close()
 
-# fazendo a mesma analise so que agora filtrado:
 
+# fazendo a mesma analise so que agora filtrado:
 
 num_sec = 0
 for section in sections:
@@ -453,6 +527,9 @@ for section in sections:
     # norte, nao em cartesiano
 
 
+
+    # Pra esse calculo dar certo, as componentes da corrente precisam ser traduzidas pro cartesiano
+
     # x' = x cos(a) + y sen(a)
     # y' = ycos(a) - x sen(a)
 
@@ -465,18 +542,21 @@ for section in sections:
     # section_int = np.sqrt(section_u **2 + section_v**2)
     # section_int_rotated = section_int * np.cos(theta_rad)
 
+    along_shore, cross_shore = rotate_current(section_u, section_v, theta_deg)
+
+
     # u_rotated = section_u * np.cos(theta_adj) + section_v * np.sin(theta_adj)
     # v_rotated = -section_u * np.sin(theta_adj) + section_v * np.cos(theta_adj)
 
     plt.figure(figsize=(10, 6))
 
     # Plotar a seção
-    plt.contourf(section['lon'], depths, section_int_rotated.T, levels=50, cmap='bwr')  # Transpondo para profundidade vs longitude
+    plt.contourf(section['lon'], depths, along_shore.T, levels=50, cmap='bwr')  # Transpondo para profundidade vs longitude
     plt.colorbar(label='Int. (m/s)')
     plt.title('Média de velocidade normal à seção')
     plt.xlabel('Longitude')
     plt.ylabel('Profundidade (m)')
     plt.gca().invert_yaxis()  # Inverter o eixo y para profundidade
     plt.tight_layout()
-    plt.savefig(f'/home/bcabral/mestrado/fig/curr_section_filt/cor2_{model}_{num_sec}')
+    plt.savefig(f'/home/bcabral/mestrado/fig/curr_section_filt/{model}_{num_sec}')
     plt.close()
