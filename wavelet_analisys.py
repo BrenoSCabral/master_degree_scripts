@@ -29,32 +29,38 @@ for year in years:
 reanalisys = xr.concat(list(reanal.values()), dim="time")
 latlon = pts[0]
 model_series = reanalisys.sel(latitude=latlon[0], longitude=latlon[1], method='nearest')
-# filtered_reanal = model_filt.filtra_reanalise(model_series)
+filtered_reanal = model_filt.filtra_reanalise(model_series)
 
-# model=filtered_reanal.values*100
+filt_model=filtered_reanal.values*100
 
 model_data = model_series['ssh'].values * 100
 # model_nfilt = model_series['ssh'].values
 
+# model_data_cut =  model_series.sel(time=slice('2000' , '2004'))['ssh'].values # selecionando um ano especifico
 
 # funcoes da wavelet
 # data_norm = waipy.normalize(model_nfilt)
+# data_norm = waipy.normalize(model_data[:365*2])
 data_norm = waipy.normalize(model_data)
 
 # TODO -> Ajustar dt e j1, testar diferentes lags
-dt =  1 # 10.25/8 # dado diario -> botar 1
+n1 = len(data_norm)
+dt =  1 # dado diario -> botar 1
 pad = 1 # bota 0 no inicio e final da serie
-dj = .2 # 0.25 isto faz 4 sub-oitavas por oitava -> como performa a wavelet
-s0 = 2*dt # escala de 12h, ja que dado eh diario -> escala inicial do dominio de periodo
-j1 = 8/dj       # isso diz fazer 8 potências de dois com dj sub-oitavas cada -> ate onde vai a ondaleta
-# usando esse lag eu consegui "descer" a linha de 95% de confianca.
-lag1 = np.corrcoef(data_norm[0:-1], data_norm[1:])[0,1]
+dj = .5 # 0.25 isto faz 4 sub-oitavas por oitava -> como performa a wavelet
+s0 = 2*dt # escala inicial do dominio de periodo
+j1 =  7/dj # int(np.floor((np.log10(n1*dt/s0))/np.log10(2)/dj))   # isso diz fazer 7 potências de dois com dj sub-oitavas cada -> ate onde vai a ondaleta
+                                                                # no meu caso essa variavel nao ta importando tanto
+
+lag1 =  np.corrcoef(data_norm[0:-1], data_norm[1:])[0,1] # essa e a variavel que mais impacta na coerencia do sinal.
 param = 6
 mother = 'Morlet'
-dtmin = 0.25/8
+dtmin = 1/256# 0.25/8
 # data_norm = waipy.normalize(model)
 # alpha = np.corrcoef(data_norm[0:-1], data_norm[1:])[0,1]; 
 # print("Lag-1 autocorrelation = {:4.2f}".format(alpha))
+
+
 result = waipy.cwt(data=data_norm, 
                    dt=dt, 
                    pad=pad, 
@@ -68,8 +74,101 @@ result = waipy.cwt(data=data_norm,
 
 label = 'BRAN'
 time = np.asarray(model_series.time.time)
-# waipy.wavelet_plot_bre(label, time, data_norm, dtmin, result);plt.savefig('/Users/breno/mestrado/ondaleta/testes/lag1.png')
-waipy.wavelet_plot(label, time, data_norm, dtmin, result);plt.savefig('/Users/breno/mestrado/ondaleta/testes/dj02.png')
+
+# aqui embaixo ta plotando a serie filtrada em cima
+t0 = np.datetime64('2001-01-01')
+tf = np.datetime64('2005-01-01')
+
+ticks = []
+
+for i in range(3,31,3):
+    ticks.append(np.log2(i))
+
+
+wavelet_power = result['power']  # Potência wavelet
+periods = result['period']  # Períodos correspondentes
+
+# Passo 3: Selecionar faixa de frequências
+faixa_min, faixa_max = 8, 16
+mask = (periods >= faixa_min) & (periods <= faixa_max)
+energia_selecionada = wavelet_power[mask, :]
+
+# Passo 4: Integrar a energia ao longo da faixa selecionada
+energia_integrada = np.sum(energia_selecionada, axis=0)
+
+# Determinar eventos energéticos (por exemplo, quando energia supera um limiar)
+# limiar = np.mean(energia_total) + 2 * np.std(energia_total)
+# eventos = energia_total > limiar
+# numero_eventos = np.sum(eventos)
+
+cmap_levels = [0.0078125, 0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0] # , 64.0# , 128.0, 256.0]
+waipy.wavelet_plot(label, time, data_norm, dtmin, result,  custom_data=filt_model, ylabel_data='ASM Filtrada (cm)',extra_plot=energia_integrada,                 
+             extra_lbl=f'Energia Integrada entre {faixa_min} e {faixa_max} dias',xmin=t0, xmax=tf, ymin=np.log2(3), ymax=np.log2(30), cmap_levels=cmap_levels, spectrum_max=10, yticks=ticks,)
+plt.savefig('/Users/breno/mestrado/ondaleta/testes/test0.png')
+plt.close('all')
+
+
+
+'''
+ymin=1.4044532162857952, ymax=5.654453216285795,
+
+Fazer abaixo a analise sazonal, separando por algumas faixas: - acho que a melhor forma de exportar isso aqui seria atraves de tabelas
+
+3 a 8
+8 a 16
+16 a 30
+
+como posso justificar fisicamente essas faixas? DESAFIO
+'''
+
+
+def conta_eventos():
+    '''
+    TODO:
+    1 - Ver a melhor forma de contabilizar essa variabilidade
+    2 - Fazer esses resultados por ano
+
+
+    ---> Fazendo serie dos eventos de OCCs (contabilizando variabilidade sazonal)
+    '''
+    wavelet_result = result
+    # Extrair os resultados principais
+    wavelet_power = wavelet_result['power']  # Potência wavelet
+    periods = wavelet_result['period']  # Períodos correspondentes
+    # time = wavelet_result['time']  # Tempo
+    # time = np.asarray(model_series.sel(time=slice('2000' , '2001')).time.time)
+
+    # Passo 3: Selecionar faixa de frequências
+    faixa_min, faixa_max = 3, 5
+    mask = (periods >= faixa_min) & (periods <= faixa_max)
+    energia_selecionada = wavelet_power[mask, :]
+
+    # Passo 4: Integrar a energia ao longo da faixa selecionada
+    energia_total = np.sum(energia_selecionada, axis=0)
+
+    # Determinar eventos energéticos (por exemplo, quando energia supera um limiar)
+    limiar = np.mean(energia_total) + 2 * np.std(energia_total)
+    eventos = energia_total > limiar
+    numero_eventos = np.sum(eventos)
+
+    print(f"Número total de eventos energéticos: {numero_eventos}")
+
+    # Passo 5: Plotar os resultados
+    # import matplotlib.pyplot as plt
+
+    plt.figure(figsize=(12, 6))
+    ax = plt.axes()
+    ax.plot(time, energia_total, label="Energia Integrada")
+    ax.axhline(y=limiar, color='r', linestyle='--', label="Limiar")
+    # ax.scatter(time[eventos], energia_total[eventos], color='red', label="Eventos")
+    ax.set_xlabel('Tempo')
+    ax.set_ylabel('Energia Integrada')
+    ax.legend()
+    ax.set_xlim(t0, tf)
+    # ax.title('Eventos Energéticos ao Longo do Tempo')
+    plt.show()
+
+
 
 def faz_analise(ano_i, ano_f, pt, str_pt):
     model = 'BRAN'
