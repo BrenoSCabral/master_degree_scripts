@@ -446,12 +446,24 @@ for section in sections:
     theta_rad = np.arctan2(delta_lat, delta_lon) + np.pi/2# Ângulo em radianos
     theta_deg = np.degrees(theta_rad)  # Convertendo para graus
 
+    # NOVA TENTATIVA DE PEGAR A COMPONENTE ALONG-SHORE:
+    ### ROTACAO DE COORDENADAS:
+
+    # acho que pra fazer esse calculo, eu preciso usar as componentes na orientacao
+    # norte, nao em cartesiano
+
+
+    # x' = x cos(a) + y sen(a)
+    # y' = ycos(a) - x sen(a)
+
+
+
     # theta_geo = CalcGeographicAngle(theta_deg)
     # theta_geo_rad = np.radians(theta_geo)  # Converter de volta para radianos
 
     # ou compoe a intensidade e multiplica pelo cos do angulo
-    section_int = np.sqrt(section_u **2 + section_v**2)
-    section_int_rotated = section_int * np.cos(theta_rad)
+    # section_int = np.sqrt(section_u **2 + section_v**2)
+    # section_int_rotated = section_int * np.cos(theta_rad)
 
     # u_rotated = section_u * np.cos(theta_adj) + section_v * np.sin(theta_adj)
     # v_rotated = -section_u * np.sin(theta_adj) + section_v * np.cos(theta_adj)
