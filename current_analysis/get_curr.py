@@ -368,72 +368,78 @@ for i in range(len(pts_cross)):
     sections.append(cross_line)
 
 # plotar o ponto mais costeiro da superficie serie "bruta" vs da filtrada -> em profundidade 0, isso nao me disse nada...
-for section in sections:
+def plot_poins():
+    for section in sections:
 # section = sections[0]
 
-    coast = section.iloc[0]
-    openp = section.iloc[-1]
+        coast = section.iloc[0]
+        openp = section.iloc[-1]
 
-    coastal_point = reanalisys.sel(longitude=coast['lon'], latitude=coast['lat'], depth=0, method='nearest')
-    open_point = reanalisys.sel(longitude=openp['lon'], latitude=openp['lat'], depth=0, method='nearest')
+        coastal_point = reanalisys.sel(longitude=coast['lon'], latitude=coast['lat'], depth=0, method='nearest')
+        open_point = reanalisys.sel(longitude=openp['lon'], latitude=openp['lat'], depth=0, method='nearest')
 
-    u_coast = coastal_point['u']
-    v_coast = coastal_point['v']
+        u_coast = coastal_point['u']
+        v_coast = coastal_point['v']
 
-    u_open = open_point['u']
-    v_open = open_point['v']
+        u_open = open_point['u']
+        v_open = open_point['v']
 
-    # pegando o filtrado
+        # pegando o filtrado
 
-    u_coast_filt = model_filt.filtra_reanalise_u(coastal_point)
-    v_coast_filt = model_filt.filtra_reanalise_v(coastal_point)
-
-
-    u_open_filt = model_filt.filtra_reanalise_u(open_point)
-    v_open_filt = model_filt.filtra_reanalise_v(open_point)
-    # rotacionando
-
-    delta_lon = section['lon'].values[-1] - section['lon'].values[0]
-    delta_lat = section['lat'].values[-1] - section['lat'].values[0]
-    theta_rad = np.arctan2(delta_lat, delta_lon) + np.pi/2# Ângulo em radianos
-    theta_deg = np.degrees(theta_rad)  # Convertendo para graus
-
-    along_shore, cross_shore = rotate_current(u_coast, v_coast, theta_deg)
-
-    along_shore_filt, cross_shore_filt = rotate_current(u_open_filt, v_open_filt, theta_deg)
-
-    # extrair valores pra plotar mais bonitinho
-
-    time = along_shore['time'].values
-
-    data = along_shore.values
-    data_filt = along_shore_filt.values
+        u_coast_filt = model_filt.filtra_reanalise_u(coastal_point)
+        v_coast_filt = model_filt.filtra_reanalise_v(coastal_point)
 
 
-    plt.figure(figsize=(15, 5))
-    plt.plot(time, data, label="Sem filtro")
-    plt.plot(time, data_filt, label="Filtrado")
+        u_open_filt = model_filt.filtra_reanalise_u(open_point)
+        v_open_filt = model_filt.filtra_reanalise_v(open_point)
+        # rotacionando
+
+        delta_lon = section['lon'].values[-1] - section['lon'].values[0]
+        delta_lat = section['lat'].values[-1] - section['lat'].values[0]
+        theta_rad = np.arctan2(delta_lat, delta_lon) + np.pi/2# Ângulo em radianos
+        theta_deg = np.degrees(theta_rad)  # Convertendo para graus
+
+        along_shore, cross_shore = rotate_current(u_coast, v_coast, theta_deg)
+
+        along_shore_filt, cross_shore_filt = rotate_current(u_open_filt, v_open_filt, theta_deg)
+
+        # extrair valores pra plotar mais bonitinho
+
+        time = along_shore['time'].values
+
+        data = along_shore.values
+        data_filt = along_shore_filt.values
 
 
-    # Formatar o eixo de tempo
-    plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%b %Y'))  # Meses e anos
-    plt.gca().xaxis.set_major_locator(plt.matplotlib.dates.MonthLocator())  # Marca por mês
-    plt.xticks(rotation=45)  # Rotacionar rótulos
-
-    # Adicionar título e rótulos
-    plt.title("Componente Along-Shore")
-    plt.xlabel("Tempo")
-    plt.ylabel("Velocidade (m/s)")
-    plt.grid()
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(f'/home/bcabral/mestrado/fig/curr_teste_comp.png')
+        plt.figure(figsize=(15, 5))
+        plt.plot(time, data, label="Sem filtro")
+        plt.plot(time, data_filt, label="Filtrado")
 
 
+        # Formatar o eixo de tempo
+        plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%b %Y'))  # Meses e anos
+        plt.gca().xaxis.set_major_locator(plt.matplotlib.dates.MonthLocator())  # Marca por mês
+        plt.xticks(rotation=45)  # Rotacionar rótulos
+
+        # Adicionar título e rótulos
+        plt.title("Componente Along-Shore")
+        plt.xlabel("Tempo")
+        plt.ylabel("Velocidade (m/s)")
+        plt.grid()
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(f'/home/bcabral/mestrado/fig/curr_teste_comp.png')
 
 # plotar os dados diarios e no final fazer um gif
 
+# for section in sections:
 section = sections[0]
+
+
+delta_lon = section['lon'].values[-1] - section['lon'].values[0]
+delta_lat = section['lat'].values[-1] - section['lat'].values[0]
+theta_rad = np.arctan2(delta_lat, delta_lon) + np.pi/2# Ângulo em radianos
+theta_deg = np.degrees(theta_rad)  # Convertendo para graus
 
 
 lat_i = section['lat'].min() - 0.3
@@ -450,55 +456,11 @@ reanal_subset = reanalisys.where((reanalisys.latitude < lat_f) &
 
 # rotacionar direto o reanal_subset pode ser mais facil
 
-# Inicializa listas para armazenar os dados
-section_u = []
-section_v = []
-
-# Extrair os dados para cada ponto na linha definida por section
-for index, row in section.iterrows():
-    lon = row['lon']
-    lat = row['lat']
-    
-    # Seleciona os dados em função da longitude e latitude, e calcula a média ao longo do tempo
-    section_u.append(reanal_subset['u'].sel(longitude=lon, latitude=lat, method='nearest').mean(dim='time').values)
-    section_v.append(reanal_subset['v'].sel(longitude=lon, latitude=lat, method='nearest').mean(dim='time').values)
-
-
-# Converter para arrays numpy
-section_u = np.array(section_u)
-section_v = np.array(section_v)
-
-# # Obter os valores de profundidade
-depths = reanal_subset['depth'].values
-
-
-
-delta_lon = section['lon'].values[-1] - section['lon'].values[0]
-delta_lat = section['lat'].values[-1] - section['lat'].values[0]
-theta_rad = np.arctan2(delta_lat, delta_lon) + np.pi/2# Ângulo em radianos
-theta_deg = np.degrees(theta_rad)  # Convertendo para graus
-
-along_shore, cross_shore = rotate_current(section_u, section_v, theta_deg)
-
-
-#####
-import numpy as np
-import xarray as xr
-
-# Função para rodar séries temporais de U e V
-def rotate_current_series(U, V, theta_deg):
-    theta_deg_conv = CalcGeographicAngle(theta_deg)
-
-    theta_rad = np.deg2rad(theta_deg_conv)
-    cos_theta = np.cos(theta_rad)
-    sin_theta = np.sin(theta_rad)
-    U_prime = cos_theta * U + sin_theta * V
-    V_prime = -sin_theta * U + cos_theta * V
-    return U_prime, V_prime
-
 
 
 # Aplicar a rotação a cada ponto de grade
+reanal_subset = reanal_subset.chunk(dict(time=-1))
+
 along_shore, cross_shore = xr.apply_ufunc(
     rotate_current,
     reanal_subset['u'],  # Entrada U
@@ -515,15 +477,136 @@ along_shore, cross_shore = xr.apply_ufunc(
 reanal_subset['along_shore'] = along_shore
 reanal_subset['cross_shore'] = cross_shore
 
+# fazendo a mesma coisa para filtrado:
+
+reanal_subset['u_filt'] = model_filt.filtra_reanalise_u(reanal_subset)
+reanal_subset['v_filt'] = model_filt.filtra_reanalise_v(reanal_subset)
+
+along_shore_filt, cross_shore_filt = xr.apply_ufunc(
+    rotate_current,
+    reanal_subset['u_filt'],  # Entrada U
+    reanal_subset['v_filt'],  # Entrada V
+    theta_deg,           # Ângulo como escalar
+    input_core_dims=[["time"], ["time"], []],  # Dimensão relevante é apenas o tempso
+    output_core_dims=[["time"], ["time"]],    # Saídas têm apenas dimensão de tempo
+    vectorize=True,  # Permite a aplicação para todas as grades
+    dask="parallelized",  # Habilita o processamento paralelo
+    output_dtypes=[reanal_subset['u'].dtype, reanal_subset['v'].dtype]
+)
+
+# Adicionar as componentes rotacionadas ao Dataset
+reanal_subset['along_shore_filt'] = along_shore_filt
+reanal_subset['cross_shore_filt'] = cross_shore_filt
 
 ## iterar na mao:
 
 section_along = []
-section_cross = []
+section_along_filt = []
 
 # reanal_subset.load()
 
 depths = reanal_subset['depth'].values
+
+'''
+
+### opt
+
+'''
+
+output_dir = '/home/bcabral/mestrado/fig/curr_gif/'
+
+# Pré-carregar todas as coordenadas de latitude e longitude relevantes
+latitudes = section['lat'].values
+longitudes = section['lon'].values
+
+# Pré-selecionar os dados ao longo das coordenadas necessárias
+reanal_subset_loaded = reanal_subset[['along_shore', 'along_shore_filt']].sel(
+    latitude=latitudes, longitude=longitudes, method='nearest'
+).load()
+
+# Inicializar os arrays para resultados
+section_along = []
+section_along_filt = []
+
+# Função para criar gráficos
+def plot_section(lons, depths, section_values, title, output_path):
+    plt.figure(figsize=(10, 6))
+    plt.contourf(lons, depths, section_values.T, levels=50, cmap='bwr')
+    plt.colorbar(label='Int. (m/s)')
+    plt.title(title)
+    plt.xlabel('Longitude')
+    plt.ylabel('Profundidade (m)')
+    plt.gca().invert_yaxis()
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+
+##
+# Coordenadas específicas da seção
+lons = section['lon'].values  # 10 longitudes
+lats = section['lat'].values  # 10 latitudes
+
+# Inicializar arrays para os resultados da seção
+section_along = []
+section_along_filt = []
+
+# Loop pelos tempos
+for t, time_step in enumerate(reanal_subset['time']):
+    print(f"Processando tempo {t}: {str(time_step.values)[:10]}")
+
+    # Inicializar as matrizes para o tempo atual
+    section_along_t = []
+    section_along_filt_t = []
+
+    # Iterar pelos pontos da seção (10 pontos)
+    for lon, lat in zip(lons, lats):
+        # Selecionar o ponto específico com todas as profundidades
+        along_point = reanal_subset['along_shore'].isel(time=t).sel(
+            longitude=lon, latitude=lat, method='nearest'
+        )
+        along_filt_point = reanal_subset['along_shore_filt'].isel(time=t).sel(
+            longitude=lon, latitude=lat, method='nearest'
+        )
+
+        # Adicionar os valores do ponto à matriz da seção
+        section_along_t.append(along_point.values)  # Shape (51,)
+        section_along_filt_t.append(along_filt_point.values)  # Shape (51,)
+
+    # Converter as listas para numpy arrays (10x51) e salvar no array principal
+    # section_along.append(np.array(section_along_t))  # Shape (10, 51)
+    # section_along_filt.append(np.array(section_along_filt_t))  # Shape (10, 51)
+
+    # Caminhos para saída
+    raw_path = f"{output_dir}/raw/section_{t:03d}.png"
+    filt_path = f"{output_dir}/filt/section_{t:03d}.png"
+
+    # Plotar gráficos
+    plot_section(lons, depths, np.array(section_along_t), f"Seção - Tempo: {str(time_step.values)[:10]}", raw_path)
+    plot_section(lons, depths, np.array(section_along_filt_t), f"Seção Filtrada - Tempo: {str(time_step.values)[:10]}", filt_path)
+
+
+
+# Loop pelos tempos
+for t, time_step in enumerate(reanal_subset['time']):
+    print(f"Processando tempo {t}: {str(time_step.values)[:10]}")
+
+    # Extrair seções para o tempo atual
+    section_along = reanal_subset_loaded['along_shore'].isel(time=t).values
+    section_along_filt = reanal_subset_loaded['along_shore_filt'].isel(time=t).values
+
+    # possivelmente vai ter que dar .T quando precisar plotar, pra transpor a matriz
+
+    # Caminhos para saída
+    raw_path = f"{output_dir}/raw/section_{t:03d}.png"
+    filt_path = f"{output_dir}/filt/section_{t:03d}.png"
+
+    # Plotar gráficos
+    plot_section(longitudes, depths, section_along, f"Seção - Tempo: {str(time_step.values)[:10]}", raw_path)
+    plot_section(longitudes, depths, section_along_filt, f"Seção Filtrada - Tempo: {str(time_step.values)[:10]}", filt_path)
+
+
+
+### bre
 for t, time_step in enumerate(reanal_subset['time']):
     reanal_subset['along_shore'].sel(time=time_step).compute()
     print(t)
@@ -533,8 +616,10 @@ for t, time_step in enumerate(reanal_subset['time']):
         lon = row['lon']
         lat = row['lat']
         
-        # Seleciona os dados em função da longitude e latitude, e calcula a média ao longo do tempo
+        # Seleciona os dados em função da longitude e latitude
         section_along.append(reanal_subset['along_shore'].isel(time=t).sel(longitude=lon, latitude=lat, method='nearest').values)
+        section_along_filt.append(reanal_subset['along_shore_filt'].isel(time=t).sel(longitude=lon, latitude=lat, method='nearest').values)
+
         # section_cross.append(reanal_subset['cross_shore'].sel(longitude=lon, latitude=lat, method='nearest').values)
 
 
@@ -543,6 +628,9 @@ for t, time_step in enumerate(reanal_subset['time']):
     # section_cross = np.array(section_cross)
 
     output_dir = '/home/bcabral/mestrado/fig/curr_gif/'
+    os.makedirs(output_dir + '/raw', exist_ok=True)
+    os.makedirs(output_dir + '/filt', exist_ok=True)
+
 
     plt.figure(figsize=(10, 6))
 
@@ -555,7 +643,22 @@ for t, time_step in enumerate(reanal_subset['time']):
     plt.gca().invert_yaxis()  # Inverter o eixo y para profundidade
     plt.tight_layout()
     # Salve a figura
-    plt.savefig(f"{output_dir}/section_{t:03d}.png")
+    plt.savefig(f"{output_dir}/raw/section_{t:03d}.png")
+    plt.close()
+
+
+    plt.figure(figsize=(10, 6))
+
+    # Plotar a seção
+    plt.contourf(section['lon'], depths, section_along_filt.T, levels=50, cmap='bwr')  # Transpondo para profundidade vs longitude
+    plt.colorbar(label='Int. (m/s)')
+    plt.title(f"Seção - Tempo: {str(time_step.values)[:10]}")
+    plt.xlabel('Longitude')
+    plt.ylabel('Profundidade (m)')
+    plt.gca().invert_yaxis()  # Inverter o eixo y para profundidade
+    plt.tight_layout()
+    # Salve a figura
+    plt.savefig(f"{output_dir}/filt/section_{t:03d}.png")
     plt.close()
 
 
