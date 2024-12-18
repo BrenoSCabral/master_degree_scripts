@@ -5,6 +5,9 @@ import waipy
 import xarray as xr
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.dates as mdates
+import pandas as pd
+import os
 
 from read_reanalisys import set_reanalisys_dims
 import model_filt
@@ -25,87 +28,477 @@ years = range(1993, 2023)
 for year in years:
     reanal[year] = set_reanalisys_dims(xr.open_mfdataset('/Volumes/BRENO_HD/BRAN/' + str(year)  + '/*.nc')
                                         , model)
-    
+
 reanalisys = xr.concat(list(reanal.values()), dim="time")
-latlon = pts[0]
-model_series = reanalisys.sel(latitude=latlon[0], longitude=latlon[1], method='nearest')
-filtered_reanal = model_filt.filtra_reanalise(model_series)
 
-filt_model=filtered_reanal.values*100
+# latlon = pts[0]
 
-model_data = model_series['ssh'].values * 100
-# model_nfilt = model_series['ssh'].values
+for latlon in pts:
+    print(latlon[0])
+    model_series = reanalisys.sel(latitude=latlon[0], longitude=latlon[1], method='nearest')
+    filtered_reanal = model_filt.filtra_reanalise(model_series)
 
-# model_data_cut =  model_series.sel(time=slice('2000' , '2004'))['ssh'].values # selecionando um ano especifico
+    filt_model=filtered_reanal.values*100
 
-# funcoes da wavelet
-# data_norm = waipy.normalize(model_nfilt)
-# data_norm = waipy.normalize(model_data[:365*2])
-data_norm = waipy.normalize(model_data)
+    model_data = model_series['ssh'].values * 100
+    # model_nfilt = model_series['ssh'].values
 
-# TODO -> Ajustar dt e j1, testar diferentes lags
-n1 = len(data_norm)
-dt =  1 # dado diario -> botar 1
-pad = 1 # bota 0 no inicio e final da serie
-dj = .5 # 0.25 isto faz 4 sub-oitavas por oitava -> como performa a wavelet
-s0 = 2*dt # escala inicial do dominio de periodo
-j1 =  7/dj # int(np.floor((np.log10(n1*dt/s0))/np.log10(2)/dj))   # isso diz fazer 7 potências de dois com dj sub-oitavas cada -> ate onde vai a ondaleta
-                                                                # no meu caso essa variavel nao ta importando tanto
+    # model_data_cut =  model_series.sel(time=slice('2000' , '2004'))['ssh'].values # selecionando um ano especifico
 
-lag1 =  np.corrcoef(data_norm[0:-1], data_norm[1:])[0,1] # essa e a variavel que mais impacta na coerencia do sinal.
-param = 6
-mother = 'Morlet'
-dtmin = 1/256# 0.25/8
-# data_norm = waipy.normalize(model)
-# alpha = np.corrcoef(data_norm[0:-1], data_norm[1:])[0,1]; 
-# print("Lag-1 autocorrelation = {:4.2f}".format(alpha))
+    # funcoes da wavelet
+    # data_norm = waipy.normalize(model_nfilt)
+    # data_norm = waipy.normalize(model_data[:365*2])
+    data_norm = waipy.normalize(model_data)
 
+    # TODO -> Ajustar dt e j1, testar diferentes lags
+    n1 = len(data_norm)
+    dt =  1 # dado diario -> botar 1
+    pad = 1 # bota 0 no inicio e final da serie
+    dj = .5 # 0.25 isto faz 4 sub-oitavas por oitava -> como performa a wavelet
+    s0 = 2*dt # escala inicial do dominio de periodo
+    j1 =  7/dj # int(np.floor((np.log10(n1*dt/s0))/np.log10(2)/dj))   # isso diz fazer 7 potências de dois com dj sub-oitavas cada -> ate onde vai a ondaleta
+                                                                    # no meu caso essa variavel nao ta importando tanto
 
-result = waipy.cwt(data=data_norm, 
-                   dt=dt, 
-                   pad=pad, 
-                   dj=dj,
-                   s0=s0,
-                   j1=j1,
-                   lag1=lag1,
-                   param=param,
-                   name='BRAN',
-                   mother=mother)
-
-label = 'BRAN'
-time = np.asarray(model_series.time.time)
-
-# aqui embaixo ta plotando a serie filtrada em cima
-t0 = np.datetime64('2001-01-01')
-tf = np.datetime64('2005-01-01')
-
-ticks = []
-
-for i in range(3,31,3):
-    ticks.append(np.log2(i))
+    lag1 =  np.corrcoef(data_norm[0:-1], data_norm[1:])[0,1] # essa e a variavel que mais impacta na coerencia do sinal.
+    param = 6
+    mother = 'Morlet'
+    dtmin = 1/256# 0.25/8
+    # data_norm = waipy.normalize(model)
+    # alpha = np.corrcoef(data_norm[0:-1], data_norm[1:])[0,1]; 
+    # print("Lag-1 autocorrelation = {:4.2f}".format(alpha))
 
 
-wavelet_power = result['power']  # Potência wavelet
-periods = result['period']  # Períodos correspondentes
+    result = waipy.cwt(data=data_norm, 
+                    dt=dt, 
+                    pad=pad, 
+                    dj=dj,
+                    s0=s0,
+                    j1=j1,
+                    lag1=lag1,
+                    param=param,
+                    name='BRAN',
+                    mother=mother)
+    time = np.asarray(model_series.time.time)
+    cmap_levels = [0.0078125, 0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0] # , 64.0# , 128.0, 256.0]
 
-# Passo 3: Selecionar faixa de frequências
-faixa_min, faixa_max = 8, 16
-mask = (periods >= faixa_min) & (periods <= faixa_max)
-energia_selecionada = wavelet_power[mask, :]
+    # Plot da ondaleta pra cada ano:
+    anos = range(1993, 2024)
+    for ano in anos:
+        label = 'BRAN'
 
-# Passo 4: Integrar a energia ao longo da faixa selecionada
-energia_integrada = np.sum(energia_selecionada, axis=0)
+        # aqui embaixo ta plotando a serie filtrada em cima
+        t0 = np.datetime64(f'{ano}-01-01')
+        tf = np.datetime64(f'{ano}-12-31')
 
-# Determinar eventos energéticos (por exemplo, quando energia supera um limiar)
-# limiar = np.mean(energia_total) + 2 * np.std(energia_total)
-# eventos = energia_total > limiar
-# numero_eventos = np.sum(eventos)
+        ticks = []
 
-cmap_levels = [0.0078125, 0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0] # , 64.0# , 128.0, 256.0]
-waipy.wavelet_plot(label, time, data_norm, dtmin, result,  custom_data=filt_model, ylabel_data='ASM Filtrada (cm)',extra_plot=energia_integrada,                 
-             extra_lbl=f'Energia Integrada entre {faixa_min} e {faixa_max} dias',xmin=t0, xmax=tf, ymin=np.log2(3), ymax=np.log2(30), cmap_levels=cmap_levels, spectrum_max=10, yticks=ticks,)
-plt.savefig('/Users/breno/mestrado/ondaleta/testes/test0.png')
-plt.close('all')
+        for i in range(3,31,3):
+            ticks.append(np.log2(i))
+
+
+        waipy.wavelet_plot(label, time, data_norm, dtmin, result,  custom_data=filt_model, ylabel_data='ASM Filtrada (cm)', extra_plot=[False],             
+                    xmin=t0, xmax=tf, ymin=np.log2(3), ymax=np.log2(30), cmap_levels=cmap_levels, spectrum_max=10, yticks=ticks,)
+        plt.savefig(f'/Users/breno/mestrado/ondaleta/{latlon[0]}/{ano}.png')
+        plt.close('all')
+
+    # # isso aqui faz o plot com a energia integrada
+
+    # wavelet_power = result['power']  # Potência wavelet
+    # periods = result['period']  # Períodos correspondentes
+
+    # # Passo 3: Selecionar faixa de frequências
+    # faixa_min, faixa_max = 8, 16
+    # mask = (periods >= faixa_min) & (periods <= faixa_max)
+    # energia_selecionada = wavelet_power[mask, :]
+
+    # # Passo 4: Integrar a energia ao longo da faixa selecionada
+    # energia_integrada = np.sum(energia_selecionada, axis=0)
+
+    # # Determinar eventos energéticos (por exemplo, quando energia supera um limiar)
+    # # limiar = np.mean(energia_total) + 2 * np.std(energia_total)
+    # # eventos = energia_total > limiar
+    # # numero_eventos = np.sum(eventos)
+    # waipy.wavelet_plot(label, time, data_norm, dtmin, result,  custom_data=filt_model, ylabel_data='ASM Filtrada (cm)',extra_plot=energia_integrada,                 
+    #             extra_lbl=f'Energia Integrada entre {faixa_min} e {faixa_max} dias',xmin=t0, xmax=tf, ymin=np.log2(3), ymax=np.log2(30), cmap_levels=cmap_levels, spectrum_max=10, yticks=ticks)
+    # plt.savefig('/Users/breno/mestrado/ondaleta/testes/test0.png')
+    # plt.close('all')
+
+    # levantamento de eventos energeticos:
+
+    wavelet_power = result['power']  # Potência wavelet
+    periods = result['period']  # Períodos correspondentes
+
+    # Passo 3: Selecionar faixa de frequências
+    def integra_energia(faixa_min, faixa_max):
+        mask = (periods >= faixa_min) & (periods < faixa_max)
+        energia_selecionada = wavelet_power[mask, :]
+
+        # Passo 4: Integrar a energia ao longo da faixa selecionada
+        energia_integrada = np.sum(energia_selecionada, axis=0)
+        return energia_integrada
+
+
+
+
+    df_energy = pd.DataFrame(index=time)
+
+    df_energy['Energia total'] = integra_energia(3, 30)
+    df_energy['3 a 5'] = integra_energia(3, 5)
+    df_energy['5 a 8'] = integra_energia(5, 8)
+    df_energy['8 a 16'] = integra_energia(8, 16)
+    df_energy['16 a 30'] = integra_energia(16, 30)
+
+
+    # Converter o índice do DataFrame para datetime, caso ainda não seja
+    df_energy.index = pd.to_datetime(df_energy.index)
+
+    #############################
+    # plot das OCCs mais altas #
+    ############################
+
+    fmodel_df = pd.DataFrame(index=time)
+    fmodel_df['ssh'] = filt_model
+
+    perc99_9 = fmodel_df['ssh'].quantile(0.999)
+    high_events = fmodel_df[fmodel_df['ssh'] > perc99_9]
+
+    # 3. Criar uma lista com os períodos de 5 dias antes e 5 dias depois
+    event_windows = []
+    for event_date in high_events.index:
+        start_date = event_date - pd.Timedelta(days=15)
+        end_date = event_date + pd.Timedelta(days=15)
+        event_window = fmodel_df.loc[start_date:end_date]
+        event_window['Event'] = event_date  # Identifica a data central do evento
+        event_windows.append(event_window)
+
+    # 4. Concatenar todas as janelas de eventos em um DataFrame
+    event_windows_df = pd.concat(event_windows)
+
+    # 5. Salvar os resultados no Excel
+    output_path = "event_analysis.xlsx"
+    with pd.ExcelWriter(output_path) as writer:
+        high_events.to_excel(writer, sheet_name="High Events")
+        event_windows_df.to_excel(writer, sheet_name="Event Windows")
+
+    # 6. Plotar a série temporal de cada evento
+    output_dir = f"/Users/breno/mestrado/ondaleta/{latlon[0]}/extreme_events/"    
+    os.makedirs(output_dir, exist_ok=True)
+
+
+
+
+    df_energy2 = df_energy.copy()
+    df_energy2['ssh'] = fmodel_df['ssh']
+
+    for event_date in high_events.index:
+        # Filtrar o período de 15 dias antes e depois do evento
+        start_date = event_date - pd.Timedelta(days=15)
+        end_date = event_date + pd.Timedelta(days=15)
+        plot_data = df_energy2.loc[start_date:end_date]
+
+        # Preparar os subplots
+        fig, axes = plt.subplots(nrows=6, ncols=1, figsize=(12, 10), constrained_layout=True, sharex=True)
+
+        # 4. Subplot 1: Série temporal de SSH
+        axes[0].plot(plot_data.index, plot_data['ssh'], color='blue', label='SSH')
+        axes[0].axhline(perc99_9, color='red', linestyle='--', label='Percentil 99.9')
+        axes[0].axvline(event_date, color='black', linestyle='--', label='Evento')
+        axes[0].set_ylabel("SSH [cm]")
+        axes[0].legend(loc="upper left")
+        axes[0].set_title(f"Evento em {event_date.date()}")
+
+        # 5. Subplots 2 a 6: Integração de energia em diferentes faixas
+        energy_labels = ['Energia total', '3 a 5', '5 a 8', '8 a 16', '16 a 30']
+        colors = ['darkblue', 'darkgreen', 'orange', 'purple', 'brown']
+
+        for i, col in enumerate(energy_labels):
+            axes[i + 1].plot(plot_data.index, plot_data[col], color=colors[i], label=col)
+            axes[i + 1].axvline(event_date, color='black', linestyle='--')  # Linha vertical no evento
+            axes[i + 1].set_ylabel(f"{col} [cm²]")
+            axes[i + 1].legend(loc="upper left")
+
+        # Configurar eixo x (datas) e ticks
+        axes[-1].set_xlabel("Data")
+        for ax in axes:
+            ax.grid()
+
+        # Salvar o gráfico
+        plt.savefig(f"{output_dir}/event_{event_date.date()}.png")
+        plt.close()
+
+
+
+
+
+
+
+
+    # Plot das series de energia
+    fig = plt.figure(figsize=(15,7))
+    axe = fig.add_subplot(111)
+
+    # Defina os limites do eixo x e y para todos os subgráficos
+    x_limits = (pd.Timestamp('1993-01-01'), pd.Timestamp('2023-01-01'))
+    y_limits = (0, 32)
+
+    ax1= fig.add_subplot(511)
+    ax2= fig.add_subplot(512)
+    ax3= fig.add_subplot(513)
+    ax4= fig.add_subplot(514)
+    ax5= fig.add_subplot(515)
+    axes = [ax1, ax2, ax3, ax4, ax5]
+
+    for i, col in enumerate(df_energy.columns):
+        ax = axes[i]
+        ax.plot(df_energy[col])
+        if i == 0:
+            ylbl = 'Total'
+        else:
+            ylbl = f'{col} dias'
+        ax.yaxis.set_label_position("right")
+        ax.xaxis.set_major_locator(mdates.YearLocator(1))  # Ticks principais a cada ano
+        ax.xaxis.set_minor_locator(mdates.MonthLocator(interval=6))  # Ticks menores a cada 6 meses
+        
+        ax.set_ylabel(ylbl)
+        ax.set_xlim(x_limits)
+        ax.set_ylim(y_limits)
+
+        
+        # Remover rótulos do eixo x dos gráficos superiores
+        if i < len(axes) - 1:
+            ax.set_xticklabels([])
+
+    # Configurar o último eixo (axes[4])
+    axe.spines['top'].set_color('none')
+    axe.spines['bottom'].set_color('none')
+    axe.spines['left'].set_color('none')
+    axe.spines['right'].set_color('none')
+    axe.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
+    axe.set_ylabel('Energia Integrada [cm²]')
+    #
+
+    axes[-1].xaxis.set_major_locator(mdates.YearLocator(2))  # Ticks principais a cada ano
+    axes[-1].xaxis.set_minor_locator(mdates.MonthLocator(interval=6))  # Ticks menores a cada 6 meses
+    axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%Y'))  # Formato do ano
+    plt.gcf().autofmt_xdate()
+
+    axes[-1].set_xlabel('Ano')
+
+    plt.tight_layout()
+    plt.savefig(f'/Users/breno/mestrado/ondaleta/{latlon[0]}/energy_series.png', dpi=500)
+    plt.close()
+
+    # Adicionar uma coluna com o número do mês (1 = Janeiro, 2 = Fevereiro, ...)
+    df_energy['month'] = df_energy.index.month
+    df_energy['year'] = df_energy.index.year
+
+    # Calcular a média e desvio padrão de energia por faixa para cada mês
+    stats = df_energy.groupby('month').agg(['mean', 'std'])
+
+    # Exibir as estatísticas para conferência
+    print(stats)
+
+    # Configuração para o gráfico
+    faixas = ['3 a 5', '5 a 8', '8 a 16', '16 a 30']
+    colors = ['blue', 'green', 'orange', 'red']
+
+    # Criar o gráfico
+    plt.figure(figsize=(12, 6))
+
+    for i, faixa in enumerate(faixas):
+        # Médias e desvios padrão para cada faixa
+        means = stats[faixa, 'mean']
+        stds = stats[faixa, 'std']
+        
+        # Plotar as barras
+        plt.bar(
+            means.index + i * 0.2,  # Deslocamento para as barras
+            means.values, 
+            yerr=stds.values,  # Barras de erro (desvio padrão)
+            width=0.2, 
+            label=f"{faixa} dias", 
+            color=colors[i],
+            alpha=0.8,
+            capsize=5
+        )
+
+    # Ajustes nos eixos e rótulos
+    plt.xticks(range(1, 13), ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'])
+    plt.xlabel("Mês")
+    plt.ylabel("Energia Integrada Média [cm²]")
+    # plt.title("Energia Média por Mês")
+    plt.legend(title="Faixa de Frequência")
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+    # Salvar ou mostrar o gráfico
+    plt.tight_layout()
+    plt.savefig(f"/Users/breno/mestrado/ondaleta/{latlon[0]}/energia_media_mensal.png", dpi=300)
+    plt.close()
+    # plt.show()
+
+    
+    energy_year = df_energy.groupby('year').sum()
+
+    # plotar energia total por ano
+
+    plt.figure(figsize=(12, 6))
+    plt.bar(energy_year.index, energy_year['Energia total'], color='skyblue', edgecolor='black')
+
+    # Configurações do gráfico
+    plt.xlabel('Ano')
+    plt.ylabel('Energia integrada de OCCs [m²]')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.xticks(energy_year.index, rotation=45)  # Mostrar todos os anos no eixo X
+
+    plt.tight_layout()
+    plt.savefig(f"/Users/breno/mestrado/ondaleta/{latlon[0]}/energia_anual.png", dpi=300)
+    # fig, axes = plt.subplots(nrows=5, ncols=1, figsize=(15, 10), constrained_layout=True)
+
+    #######################################
+    # Contando numero de ondas por mes    #
+    #######################################
+
+
+    def count_waves_by_month(df, ssh_col='ssh'):
+        """
+        Conta o número de ondas (passagens por zero) em uma série temporal e agrupa por mês.
+
+        Parâmetros:
+            df (pd.DataFrame): DataFrame com índice datetime e uma coluna ssh.
+            ssh_col (str): Nome da coluna com os valores de ssh.
+
+        Retorna:
+            pd.DataFrame: Número de ondas registradas por mês.
+        """
+        # 1. Identificar passagens por zero
+        ssh = df[ssh_col].values
+        zero_crossings = np.where(np.diff(np.sign(ssh)) != 0)[0]  # Índices onde ocorre a passagem por zero
+        
+        # 2. Contar meias ondas
+        num_half_waves = len(zero_crossings)
+        num_full_waves = num_half_waves // 2  # Uma onda completa = 2 meias ondas
+        
+        # 3. Associar as passagens por zero com as datas
+        crossing_dates = df.index[zero_crossings]
+        crossing_df = pd.DataFrame({'crossing_date': crossing_dates, 'half_wave': 1})
+        
+        # 4. Agrupar as contagens por mês
+        crossing_df['month'] = crossing_df['crossing_date'].dt.to_period('M')  # Agrupa por mês
+        monthly_wave_counts = crossing_df.groupby('month')['half_wave'].sum() // 2  # Contar ondas completas
+        
+        # 5. Criar DataFrame final
+        monthly_wave_counts = monthly_wave_counts.reset_index()
+        monthly_wave_counts.columns = ['Month', 'Wave_Count']
+        
+        return monthly_wave_counts
+
+    monthly_wave_counts = count_waves_by_month(fmodel_df)
+
+
+    def count_waves_by_year(df, ssh_col='ssh'):
+        """
+        Conta o número de ondas (passagens por zero) em uma série temporal e agrupa por ano.
+
+        Parâmetros:
+            df (pd.DataFrame): DataFrame com índice datetime e uma coluna ssh.
+            ssh_col (str): Nome da coluna com os valores de ssh.
+
+        Retorna:
+            pd.DataFrame: Número de ondas registradas por ano.
+        """
+        # 1. Identificar passagens por zero
+        ssh = df[ssh_col].values
+        zero_crossings = np.where(np.diff(np.sign(ssh)) != 0)[0]  # Índices onde ocorre a passagem por zero
+        
+        # 2. Associar as passagens por zero com as datas
+        crossing_dates = df.index[zero_crossings]
+        crossing_df = pd.DataFrame({'crossing_date': crossing_dates, 'half_wave': 1})
+        
+        # 3. Agrupar as contagens por ano
+        crossing_df['year'] = crossing_df['crossing_date'].dt.year  # Extrair o ano
+        yearly_wave_counts = crossing_df.groupby('year')['half_wave'].sum() // 2  # Contar ondas completas
+        
+        # 4. Criar DataFrame final
+        yearly_wave_counts = yearly_wave_counts.reset_index()
+        yearly_wave_counts.columns = ['Year', 'Wave_Count']
+        
+        return yearly_wave_counts
+
+    # -------------------
+    # Aplicar a Função
+    # -------------------
+    yearly_wave_counts = count_waves_by_year(fmodel_df)
+
+    # -------------------
+    # Plotar Gráfico de Barras
+    # -------------------
+    plt.figure(figsize=(12, 6))
+    plt.bar(yearly_wave_counts['Year'], yearly_wave_counts['Wave_Count'], color='skyblue', edgecolor='black')
+
+    # Configurações do gráfico
+    plt.xlabel('Ano')
+    plt.ylabel('Número de Ondas')
+    plt.title('Número de Ondas Registradas por Ano')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.xticks(yearly_wave_counts['Year'], rotation=45)  # Mostrar todos os anos no eixo X
+
+    plt.tight_layout()
+    plt.savefig(f"/Users/breno/mestrado/ondaleta/{latlon[0]}/ondas_anual.png", dpi=300)
+
+
+    # Plotar gráfico de barra dos dados anuais
+
+    def count_waves_and_monthly_stats(df, ssh_col='ssh'):
+        """
+        Conta ondas e calcula a média e desvio padrão do número de ondas por mês do ano.
+
+        Parâmetros:
+            df (pd.DataFrame): DataFrame com índice datetime e coluna 'ssh'.
+            ssh_col (str): Nome da coluna com os valores de ssh.
+
+        Retorna:
+            pd.DataFrame: DataFrame com média e desvio padrão do número de ondas por mês do ano.
+        """
+        # 1. Identificar passagens por zero
+        ssh = df[ssh_col].values
+        zero_crossings = np.where(np.diff(np.sign(ssh)) != 0)[0]  # Passagens por zero
+        
+        # 2. Contar ondas
+        crossing_dates = df.index[zero_crossings]  # Datas das passagens
+        crossing_df = pd.DataFrame({'date': crossing_dates, 'half_wave': 1})
+        crossing_df['month'] = crossing_df['date'].dt.month  # Extrair mês
+        crossing_df['year'] = crossing_df['date'].dt.year  # Extrair ano
+        
+        # Contagem de ondas (2 meias ondas = 1 onda completa)
+        monthly_counts = crossing_df.groupby(['year', 'month'])['half_wave'].sum() // 2
+        monthly_counts = monthly_counts.reset_index()
+        monthly_counts.columns = ['Year', 'Month', 'Wave_Count']
+        
+        # 3. Calcular média e desvio padrão para cada mês ao longo dos anos
+        stats = monthly_counts.groupby('Month')['Wave_Count'].agg(['mean', 'std']).reset_index()
+        stats.columns = ['Month', 'Mean_Wave_Count', 'Std_Wave_Count']
+        
+        return stats
+
+
+
+    # Calcular estatísticas mensais
+    monthly_wave_stats = count_waves_and_monthly_stats(fmodel_df)
+
+    # 4. Plotar gráfico com médias e desvio padrão
+    plt.figure(figsize=(10, 6))
+    plt.bar(monthly_wave_stats['Month'], monthly_wave_stats['Mean_Wave_Count'], 
+            yerr=monthly_wave_stats['Std_Wave_Count'], 
+            capsize=5, color='skyblue', edgecolor='black')
+
+    plt.xticks(ticks=range(1, 13), labels=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
+    plt.xlabel("Mês")
+    plt.ylabel("Número de Ondas")
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.savefig(f"/Users/breno/mestrado/ondaleta/{latlon[0]}/ondas_media_mensal.png", dpi=300)
+
 
 
 
@@ -119,6 +512,21 @@ Fazer abaixo a analise sazonal, separando por algumas faixas: - acho que a melho
 16 a 30
 
 como posso justificar fisicamente essas faixas? DESAFIO
+
+bandas de Castro 1995:
+
+entre 12 e 9.6 dias
+
+entre 6 e 7 dias
+
+entre 4 e 4.4 dias
+
+Bandas adaptadas:
+
+3 a 5
+5 a 8
+8 a 16
+16 a 30
 '''
 
 
