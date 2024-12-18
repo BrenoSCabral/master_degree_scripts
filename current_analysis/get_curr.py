@@ -339,35 +339,6 @@ def rotate_current(U, V, theta_deg):
 
 # year = 2015
 model = 'BRAN'
-
-
-# reanal = xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
-# print('______________________________')
-# print(model, list(reanal.indexes))# list(reanal.keys()))
-
-
-reanal = {}
-years = [2015]
-for year in years:
-    reanal[year] = set_reanalisys_curr_dims(xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
-                                        , model)
-    
-reanalisys = xr.concat(list(reanal.values()), dim="time")
-
-# define a linha que eu vou plotar
-pts_cross = get_cross_points()
-sections = []
-for i in range(len(pts_cross)):
-    if i%2 != 0:
-        continue
-    start = (pts_cross.iloc[i]['lon'], pts_cross.iloc[i]['lat'])
-    end = (pts_cross.iloc[i + 1]['lon'], pts_cross.iloc[i + 1]['lat'])
-
-    cross_line = interpolate_points(start, end, 10)
-
-    sections.append(cross_line)
-
-# plotar o ponto mais costeiro da superficie serie "bruta" vs da filtrada -> em profundidade 0, isso nao me disse nada...
 def plot_poins():
     for section in sections:
 # section = sections[0]
@@ -432,106 +403,16 @@ def plot_poins():
 
 # plotar os dados diarios e no final fazer um gif
 
-# for section in sections:
-section = sections[0]
 
-
-delta_lon = section['lon'].values[-1] - section['lon'].values[0]
-delta_lat = section['lat'].values[-1] - section['lat'].values[0]
-theta_rad = np.arctan2(delta_lat, delta_lon) + np.pi/2# Ângulo em radianos
-theta_deg = np.degrees(theta_rad)  # Convertendo para graus
-
-
-lat_i = section['lat'].min() - 0.3
-lat_f = section['lat'].max() + 0.3
-lon_i = section['lon'].min() - 0.3
-lon_f = section['lon'].max() + 0.3
-
-# preciso pegar agora o quadrilatero em torno da linha pra fazer a interpolacao
-reanal_subset = reanalisys.where((reanalisys.latitude < lat_f) & 
-                            (reanalisys.longitude < lon_f) &
-                            (reanalisys.latitude > lat_i) & 
-                            (reanalisys.longitude > lon_i) ,
-                            drop=True)
-
-# rotacionar direto o reanal_subset pode ser mais facil
-
-
-
-# Aplicar a rotação a cada ponto de grade
-reanal_subset = reanal_subset.chunk(dict(time=-1))
-
-along_shore, cross_shore = xr.apply_ufunc(
-    rotate_current,
-    reanal_subset['u'],  # Entrada U
-    reanal_subset['v'],  # Entrada V
-    theta_deg,           # Ângulo como escalar
-    input_core_dims=[["time"], ["time"], []],  # Dimensão relevante é apenas o tempo
-    output_core_dims=[["time"], ["time"]],    # Saídas têm apenas dimensão de tempo
-    vectorize=True,  # Permite a aplicação para todas as grades
-    dask="parallelized",  # Habilita o processamento paralelo
-    output_dtypes=[reanal_subset['u'].dtype, reanal_subset['v'].dtype]
-)
-
-# Adicionar as componentes rotacionadas ao Dataset
-reanal_subset['along_shore'] = along_shore
-reanal_subset['cross_shore'] = cross_shore
-
-# fazendo a mesma coisa para filtrado:
-
-reanal_subset['u_filt'] = model_filt.filtra_reanalise_u(reanal_subset)
-reanal_subset['v_filt'] = model_filt.filtra_reanalise_v(reanal_subset)
-
-along_shore_filt, cross_shore_filt = xr.apply_ufunc(
-    rotate_current,
-    reanal_subset['u_filt'],  # Entrada U
-    reanal_subset['v_filt'],  # Entrada V
-    theta_deg,           # Ângulo como escalar
-    input_core_dims=[["time"], ["time"], []],  # Dimensão relevante é apenas o tempso
-    output_core_dims=[["time"], ["time"]],    # Saídas têm apenas dimensão de tempo
-    vectorize=True,  # Permite a aplicação para todas as grades
-    dask="parallelized",  # Habilita o processamento paralelo
-    output_dtypes=[reanal_subset['u'].dtype, reanal_subset['v'].dtype]
-)
-
-# Adicionar as componentes rotacionadas ao Dataset
-reanal_subset['along_shore_filt'] = along_shore_filt
-reanal_subset['cross_shore_filt'] = cross_shore_filt
-
-## iterar na mao:
-
-section_along = []
-section_along_filt = []
-
-# reanal_subset.load()
-
-depths = reanal_subset['depth'].values
-
-'''
-
-### opt
-
-'''
-
-output_dir = '/home/bcabral/mestrado/fig/curr_gif/'
-
-# Pré-carregar todas as coordenadas de latitude e longitude relevantes
-latitudes = section['lat'].values
-longitudes = section['lon'].values
-
-# Pré-selecionar os dados ao longo das coordenadas necessárias
-reanal_subset_loaded = reanal_subset[['along_shore', 'along_shore_filt']].sel(
-    latitude=latitudes, longitude=longitudes, method='nearest'
-).load()
-
-# Inicializar os arrays para resultados
-section_along = []
-section_along_filt = []
-
+### GARBAGE ABOVEEEE
 # Função para criar gráficos
-def plot_section(lons, depths, section_values, title, output_path):
-    plt.figure(figsize=(10, 6))
-    plt.contourf(lons, depths, section_values.T, levels=50, cmap='bwr')
+
+
+def plot_section(lons, depths, section_values, title, output_path, lvls = 50):
+    fig= plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot(1, 1, 1) # nrows, ncols, index
+    ax.set_facecolor([0,0,0,0.6])
+    plt.contourf(lons, depths, section_values.T, levels=lvls, cmap='magma')
     plt.colorbar(label='Int. (m/s)')
     plt.title(title)
     plt.xlabel('Longitude')
@@ -541,47 +422,451 @@ def plot_section(lons, depths, section_values, title, output_path):
     plt.savefig(output_path)
     plt.close()
 
-##
-# Coordenadas específicas da seção
-lons = section['lon'].values  # 10 longitudes
-lats = section['lat'].values  # 10 latitudes
 
+def four_window_fig(top_e, top_d, bot_e, bot_d, path):
+
+    fig, ax = plt.subplots(2,2, figsize=(12,9))
+
+
+    dep_sup = reanal_subset['depth'].sel(depth=slice(0,400))
+    dep_bot = reanal_subset['depth'].sel(depth=slice(400,10000))
+
+    lon_e = lons[:6] # reanal_subset['longitude'].sel(longitude=slice(lons[0], lons[5]))
+    lon_d = lons[5:] # reanal_subset['longitude'].sel(longitude=slice(lons[5], lons[9]))
+
+    ticks1 = np.arange(-.6, .6, .03)
+
+
+    ## Esquerda superior -----------------------------------
+
+    im1 = ax[0,0].contourf(lon_e, -dep_sup, np.array(top_e).T, cmap='bwr', levels=ticks1)
+    ax[0,0].set_facecolor([0,0,0,0.6]) 
+
+
+    cs1 = ax[0,0].contour(lon_e, -dep_sup, np.array(top_e).T, colors='black', levels=ticks1, linestyles= 'dashed',linewidths=0.5 )
+    ax[0,0].clabel(cs1, inline=True,fontsize=10)
+
+
+    # ax[0,0].set_xlim(-55, -45)
+    #ax[0,0].set_xlabel("Longitude (°)")
+    ax[0,0].set_ylabel("Depth (m)")
+    ax[0,0].set_xticks([])
+
+    ax[0,0].set_title('Alongshore Flux: 0 - 400m', fontsize=10, loc='left')
+
+    ## Direita superior -----------------------------------
+
+
+    ticks2 = np.arange(-.6,.6, .05)
+
+    im1 = ax[0,1].contourf(lon_d, -dep_sup, np.array(top_d).T, cmap='bwr', levels=ticks2)
+    ax[0,1].set_facecolor([0,0,0,0.6]) 
+    #plt.colorbar(im1, label='Mean Temperature (°C)', extend='both', 
+    #             orientation='vertical', pad=0.02, fraction=0.05, ax = ax[0,1])
+
+    cs1 = ax[0,1].contour(lon_d, -dep_sup, np.array(top_d).T, colors='black', levels=ticks2, linestyles= 'dashed',linewidths=0.5 )
+    ax[0,1].clabel(cs1, inline=True,fontsize=10)
+
+    ax[0,1].set_yticks([])
+    ax[0,1].set_xticks([])
+
+
+    ## Esquerda Inferior -----------------------------------
+
+
+    im2 = ax[1,0].contourf(lon_e, -dep_bot, np.array(bot_e).T, cmap='bwr', levels=ticks2)
+    ax[1,0].set_facecolor([0,0,0,0.6]) 
+
+    cs2 = ax[1,0].contour(lon_e, -dep_bot, np.array(bot_e).T, colors='black', levels=ticks2, linestyles= 'dashed',linewidths=0.5 )
+    ax[1,0].clabel(cs2, inline=True,fontsize=10)
+
+
+    ax[1,0].set_ylabel("Depth (m)")
+
+
+    ax[1,0].annotate("South America", xy=(-53, -4000), rotation=90, 
+                fontsize=11, fontweight='bold', color='black', ha='center',va='center',
+                bbox=dict(boxstyle="round,pad=0.2",fc="w", alpha=0.7))
+
+    ax[1,0].set_title('Alongshore Flux: 400 - 4500m', fontsize=10, loc='left')
+
+
+    ## Direita Inferior -----------------------------------
+
+
+
+    im2 = ax[1,1].contourf(lon_d, - dep_bot, np.array(bot_d).T, cmap='bwr', levels=ticks2)
+    ax[1,1].set_facecolor([0,0,0,0.6]) 
+
+    cs2 = ax[1,1].contour(lon_d, - dep_bot, np.array(bot_d).T, colors='black', levels=ticks2, linestyles= 'dashed',linewidths=0.5 )
+    ax[1,1].clabel(cs2, inline=True,fontsize=10)
+
+    ax[1,1].set_yticks([])
+
+
+    plt.tight_layout()
+    #plt.suptitle('Latitude: '+lat_corte+'°', fontsize=10, loc='center')
+    plt.suptitle('Reanalysis: BRAN', fontsize=10, fontweight='bold',x=0.85)
+
+    plt.savefig(path)
+
+
+def four_window_fig_filt(top_e, top_d, bot_e, bot_d, path):
+
+    fig, ax = plt.subplots(2,2, figsize=(12,9))
+
+
+    dep_sup = reanal_subset['depth'].sel(depth=slice(0,400))
+    dep_bot = reanal_subset['depth'].sel(depth=slice(400,10000))
+
+    lon_e = lons[:6] # reanal_subset['longitude'].sel(longitude=slice(lons[0], lons[5]))
+    lon_d = lons[5:] # reanal_subset['longitude'].sel(longitude=slice(lons[5], lons[9]))
+
+    # ticks1 = np.arange(-.2, .2, .0005)
+
+
+    ## Esquerda superior -----------------------------------
+
+    im1 = ax[0,0].contourf(lon_e, -dep_sup, np.array(top_e).T, cmap='bwr') # , levels=ticks1)
+    ax[0,0].set_facecolor([0,0,0,0.6]) 
+
+
+    cs1 = ax[0,0].contour(lon_e, -dep_sup, np.array(top_e).T, colors='black', linestyles= 'dashed',linewidths=0.5 ) # , levels=ticks1
+    ax[0,0].clabel(cs1, inline=True,fontsize=10)
+
+
+    # ax[0,0].set_xlim(-55, -45)
+    #ax[0,0].set_xlabel("Longitude (°)")
+    ax[0,0].set_ylabel("Depth (m)")
+    ax[0,0].set_xticks([])
+
+    ax[0,0].set_title('Alongshore Filtered Flux: 0 - 400m', fontsize=10, loc='left')
+
+    ## Direita superior -----------------------------------
+
+
+    ticks2 = np.arange(-.2,.2, .0005)
+
+    im1 = ax[0,1].contourf(lon_d, -dep_sup, np.array(top_d).T, cmap='bwr') # , levels=ticks2)
+    ax[0,1].set_facecolor([0,0,0,0.6]) 
+    #plt.colorbar(im1, label='Mean Temperature (°C)', extend='both', 
+    #             orientation='vertical', pad=0.02, fraction=0.05, ax = ax[0,1])
+
+    cs1 = ax[0,1].contour(lon_d, -dep_sup, np.array(top_d).T, colors='black', linestyles= 'dashed',linewidths=0.5 ) # levels=ticks2, 
+    ax[0,1].clabel(cs1, inline=True,fontsize=10)
+
+    ax[0,1].set_yticks([])
+    ax[0,1].set_xticks([])
+
+
+    ## Esquerda Inferior -----------------------------------
+
+
+    im2 = ax[1,0].contourf(lon_e, -dep_bot, np.array(bot_e).T, cmap='bwr') # , levels=ticks2)
+    ax[1,0].set_facecolor([0,0,0,0.6]) 
+
+    cs2 = ax[1,0].contour(lon_e, -dep_bot, np.array(bot_e).T, colors='black',linestyles= 'dashed',linewidths=0.5 ) # levels=ticks2, 
+    ax[1,0].clabel(cs2, inline=True,fontsize=10)
+
+
+    ax[1,0].set_ylabel("Depth (m)")
+
+
+    ax[1,0].set_title('Alongshore Filtered Flux: 400 - 4500m', fontsize=10, loc='left')
+
+
+    ## Direita Inferior -----------------------------------
+
+
+
+    im2 = ax[1,1].contourf(lon_d, - dep_bot, np.array(bot_d).T, cmap='bwr') #, levels=ticks2)
+    ax[1,1].set_facecolor([0,0,0,0.6]) 
+
+    cs2 = ax[1,1].contour(lon_d, - dep_bot, np.array(bot_d).T, colors='black', linestyles= 'dashed',linewidths=0.5 )# levels=ticks2, 
+    ax[1,1].clabel(cs2, inline=True,fontsize=10)
+
+    ax[1,1].set_yticks([])
+
+
+    plt.tight_layout()
+    #plt.suptitle('Latitude: '+lat_corte+'°', fontsize=10, loc='center')
+    plt.suptitle('Reanalysis: BRAN', fontsize=10, fontweight='bold',x=0.85)
+
+    plt.savefig(path)
+
+
+# reanal = xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
+# print('______________________________')
+# print(model, list(reanal.indexes))# list(reanal.keys()))
+
+
+reanal = {}
+years = range(1993, 2023)
+for year in years:
+
+    reanal[year] = set_reanalisys_curr_dims(xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
+                                        , model)
+    
+reanalisys = xr.concat(list(reanal.values()), dim="time")
+
+# define a linha que eu vou plotar
+pts_cross = get_cross_points()
+sections = []
+for i in range(len(pts_cross)):
+    if i%2 != 0:
+        continue
+    start = (pts_cross.iloc[i]['lon'], pts_cross.iloc[i]['lat'])
+    end = (pts_cross.iloc[i + 1]['lon'], pts_cross.iloc[i + 1]['lat'])
+
+    cross_line = interpolate_points(start, end, 10)
+
+    sections.append(cross_line)
+
+# plotar o ponto mais costeiro da superficie serie "bruta" vs da filtrada -> em profundidade 0, isso nao me disse nada...
+
+s = 0
+for section in sections:
+    s+=1
+    print(f'Iniciando seção {s}')
+# section = sections[0]
+
+
+    delta_lon = section['lon'].values[-1] - section['lon'].values[0]
+    delta_lat = section['lat'].values[-1] - section['lat'].values[0]
+    theta_rad = np.arctan2(delta_lat, delta_lon) + np.pi/2# Ângulo em radianos
+    theta_deg = np.degrees(theta_rad)  # Convertendo para graus
+
+
+    lat_i = section['lat'].min() - 0.3
+    lat_f = section['lat'].max() + 0.3
+    lon_i = section['lon'].min() - 0.3
+    lon_f = section['lon'].max() + 0.3
+
+    # preciso pegar agora o quadrilatero em torno da linha pra fazer a interpolacao
+    reanal_subset = reanalisys.where((reanalisys.latitude < lat_f) & 
+                                (reanalisys.longitude < lon_f) &
+                                (reanalisys.latitude > lat_i) & 
+                                (reanalisys.longitude > lon_i) ,
+                                drop=True)
+
+    # rotacionar direto o reanal_subset pode ser mais facil
+
+
+
+    # Aplicar a rotação a cada ponto de grade
+    reanal_subset = reanal_subset.chunk(dict(time=-1))
+
+    along_shore, cross_shore = xr.apply_ufunc(
+        rotate_current,
+        reanal_subset['u'],  # Entrada U
+        reanal_subset['v'],  # Entrada V
+        theta_deg,           # Ângulo como escalar
+        input_core_dims=[["time"], ["time"], []],  # Dimensão relevante é apenas o tempo
+        output_core_dims=[["time"], ["time"]],    # Saídas têm apenas dimensão de tempo
+        vectorize=True,  # Permite a aplicação para todas as grades
+        dask="parallelized",  # Habilita o processamento paralelo
+        output_dtypes=[reanal_subset['u'].dtype, reanal_subset['v'].dtype]
+    )
+
+    # Adicionar as componentes rotacionadas ao Dataset
+    along_shore = along_shore.chunk({'depth': 13, 'latitude': 16, 'longitude': 27, 'time': 30})
+    print('comecou a computar os dados along_shore')
+    along_shore = along_shore.compute()
+    print('terminou')
+    reanal_subset['along_shore'] = along_shore
+    reanal_subset['cross_shore'] = cross_shore
+
+    # fazendo a mesma coisa para filtrado:
+
+    reanal_subset['u_filt'] = model_filt.filtra_reanalise_u(reanal_subset)
+    reanal_subset['v_filt'] = model_filt.filtra_reanalise_v(reanal_subset)
+
+    along_shore_filt, cross_shore_filt = xr.apply_ufunc(
+        rotate_current,
+        reanal_subset['u_filt'],  # Entrada U
+        reanal_subset['v_filt'],  # Entrada V
+        theta_deg,           # Ângulo como escalar
+        input_core_dims=[["time"], ["time"], []],  # Dimensão relevante é apenas o tempso
+        output_core_dims=[["time"], ["time"]],    # Saídas têm apenas dimensão de tempo
+        vectorize=True,  # Permite a aplicação para todas as grades
+        dask="parallelized",  # Habilita o processamento paralelo
+        output_dtypes=[reanal_subset['u'].dtype, reanal_subset['v'].dtype]
+    )
+
+    # Adicionar as componentes rotacionadas ao Dataset
+    reanal_subset['along_shore_filt'] = along_shore_filt
+    reanal_subset['cross_shore_filt'] = cross_shore_filt
+
+    ## iterar na mao:
+
+
+    depths = reanal_subset['depth'].values
+
+
+    # Pré-carregar todas as coordenadas de latitude e longitude relevantes
+    latitudes = section['lat'].values
+    longitudes = section['lon'].values
+
+    # Pré-selecionar os dados ao longo das coordenadas necessárias
+    reanal_subset_loaded = reanal_subset[['along_shore', 'along_shore_filt']].sel(
+        latitude=latitudes, longitude=longitudes, method='nearest'
+    ).load()
+
+    # Inicializar os arrays para resultados
+    section_along = []
+    section_along_filt = []
+
+
+    ##
+    # Coordenadas específicas da seção
+    lons = section['lon'].values  # 10 longitudes
+    lats = section['lat'].values  # 10 latitudes
+
+    contributions = []
+    for t, time_step in enumerate(reanal_subset['time']):
+        print(f'Fazendo {t}: {time_step}')
+
+        time_index = t # Índice do tempo desejado (mude conforme necessário)
+        time_selected = reanal_subset['time'].isel(time=time_index)
+
+        # Selecionar a variável
+        filt_top= reanal_subset['along_shore_filt'].sel(time=time_selected, depth=slice(0,400))
+        filt_bot= reanal_subset['along_shore_filt'].sel(time=time_selected, depth=slice(400,999999))
+
+        raw_top= reanal_subset['along_shore'].sel(time=time_selected, depth=slice(0,400))
+        raw_bot= reanal_subset['along_shore'].sel(time=time_selected, depth=slice(400,999999))
+
+
+        filt_top_e = []
+        filt_top_d = []
+        filt_bot_e = []
+        filt_bot_d = []
+
+        raw_top_e = []
+        raw_top_d = []
+        raw_bot_e = []
+        raw_bot_d = []
+
+        
+        filt = []
+        raw = []
+
+        # pensando no plot com 4 quadros, fazer o subset aqui, antes de entrar no loop
+        # tambem vai ser preciso tratar excecoes no loop quando lat ou lon estiver fora do subset
+        for lat, lon in zip(lats, lons):
+            filt.append(reanal_subset['along_shore_filt'].sel(latitude=lat, longitude=lon, time=time_selected, method='nearest'))
+            raw.append(reanal_subset['along_shore'].sel(latitude=lat, longitude=lon,time=time_selected, method='nearest'))
+
+            if lon < lons[5]:
+            # Extrair o perfil em profundidade para o par (lat, lon)
+                filt_top_e.append(filt_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                filt_bot_e.append(filt_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                raw_top_e.append(raw_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                raw_bot_e.append(raw_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+            elif lon == lons[5]:
+                filt_top_e.append(filt_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                filt_bot_e.append(filt_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                raw_top_e.append(raw_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                raw_bot_e.append(raw_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+        
+                filt_top_d.append(filt_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                filt_bot_d.append(filt_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                raw_top_d.append(raw_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                raw_bot_d.append(raw_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+            else:
+                filt_top_d.append(filt_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                filt_bot_d.append(filt_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                raw_top_d.append(raw_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                raw_bot_d.append(raw_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+        output_dir = f'/home/bcabral/mestrado/fig/secao{s}/'
+        os.makedirs(output_dir + f'/raw/{str(time_step.values)[:4]}', exist_ok=True)
+        os.makedirs(output_dir + f'/filt/{str(time_step.values)[:4]}', exist_ok=True)
+
+        four_window_fig(raw_top_e, raw_top_d, raw_bot_e, raw_bot_d, output_dir+f'/raw/{str(time_step.values)[:4]}/{str(time_step.values)[:10]}')
+
+        four_window_fig_filt(filt_top_e, filt_top_d, filt_bot_e, filt_bot_d, output_dir+f'/filt/{str(time_step.values)[:4]}/{str(time_step.values)[:10]}' )
+
+
+        raw = np.array(raw)
+        filt = np.array(filt)
+        brute = raw - filt
+        # brute = np.where(filt>0, raw-filt, raw + filt)
+
+        great = np.where(np.abs(brute)>np.abs(raw), brute, raw)
+
+        contribution = (abs(filt)/abs(great)) * 100
+
+        contributions.append(contribution)
+
+    contributions= np.array(contributions)
+
+    mean_contribution = np.mean(contributions, axis=0)
+
+    plot_section(lons, depths, mean_contribution, 'Contribuição média das OCCs à corrente', output_dir + f'/contribuicao_{str(time_step.values)[:4]}')
+
+########################################################################################################################################################################################
+########################################################################################################################################################################################
+########################################################################################################################################################################################
+########################################################################################################################################################################################
+############################### OLD GARBAGE
 # Inicializar arrays para os resultados da seção
 section_along = []
 section_along_filt = []
-
-# Loop pelos tempos
 for t, time_step in enumerate(reanal_subset['time']):
-    print(f"Processando tempo {t}: {str(time_step.values)[:10]}")
+    print(t)
+    time_index = t  # Índice do tempo desejado (mude conforme necessário)
+    time_selected = reanal_subset['time'].isel(time=time_index)
 
-    # Inicializar as matrizes para o tempo atual
-    section_along_t = []
+    # Selecionar a variável
+    variable = 'along_shore_filt'  # Pode ser along_shore, cross_shore, etc.
+    data_at_time = reanal_subset[variable].sel(time=time_selected)
+
+
     section_along_filt_t = []
+    # pensando no plot com 4 quadros, fazer o subset aqui, antes de entrar no loop
+    # tambem vai ser preciso tratar excecoes no loop quando lat ou lon estiver fora do subset
+    for lat, lon in zip(lats, lons):
+        # Extrair o perfil em profundidade para o par (lat, lon)
+        profile = data_at_time.sel(latitude=lat, longitude=lon, method='nearest')
+        section_along_filt_t.append(profile)
 
-    # Iterar pelos pontos da seção (10 pontos)
-    for lon, lat in zip(lons, lats):
-        # Selecionar o ponto específico com todas as profundidades
-        along_point = reanal_subset['along_shore'].isel(time=t).sel(
-            longitude=lon, latitude=lat, method='nearest'
-        )
-        along_filt_point = reanal_subset['along_shore_filt'].isel(time=t).sel(
-            longitude=lon, latitude=lat, method='nearest'
-        )
+# # Loop pelos tempos
+# for t, time_step in enumerate(reanal_subset['time']):
+#     print(f"Processando tempo {t}: {str(time_step.values)[:10]}")
 
-        # Adicionar os valores do ponto à matriz da seção
-        section_along_t.append(along_point.values)  # Shape (51,)
-        section_along_filt_t.append(along_filt_point.values)  # Shape (51,)
+#     # Inicializar as matrizes para o tempo atual
+#     section_along_t = []
+#     section_along_filt_t = []
 
-    # Converter as listas para numpy arrays (10x51) e salvar no array principal
-    # section_along.append(np.array(section_along_t))  # Shape (10, 51)
-    # section_along_filt.append(np.array(section_along_filt_t))  # Shape (10, 51)
+#     # Iterar pelos pontos da seção (10 pontos)
+#     for lon, lat in zip(lons, lats):
+#         # Selecionar o ponto específico com todas as profundidades
+#         along_point = reanal_subset['along_shore'].isel(time=t).sel(
+#             longitude=lon, latitude=lat, method='nearest'
+#         )
+#         along_filt_point = reanal_subset['along_shore_filt'].isel(time=t).sel(
+#             longitude=lon, latitude=lat, method='nearest'
+#         )
 
-    # Caminhos para saída
-    raw_path = f"{output_dir}/raw/section_{t:03d}.png"
-    filt_path = f"{output_dir}/filt/section_{t:03d}.png"
+#         # Adicionar os valores do ponto à matriz da seção
+#         section_along_t.append(along_point.values)  # Shape (51,)
+#         section_along_filt_t.append(along_filt_point.values)  # Shape (51,)
+
+#     # Converter as listas para numpy arrays (10x51) e salvar no array principal
+#     # section_along.append(np.array(section_along_t))  # Shape (10, 51)
+#     # section_along_filt.append(np.array(section_along_filt_t))  # Shape (10, 51)
+
+#     # Caminhos para saída
+    raw_path = f"{output_dir}/raw/00TESTEsection_{t:03d}.png"
+    filt_path = f"{output_dir}/filt/00TESTEsection_{t:03d}.png"
 
     # Plotar gráficos
-    plot_section(lons, depths, np.array(section_along_t), f"Seção - Tempo: {str(time_step.values)[:10]}", raw_path)
+    # plot_section(lons, depths, np.array(section_along_t), f"Seção - Tempo: {str(time_step.values)[:10]}", raw_path)
     plot_section(lons, depths, np.array(section_along_filt_t), f"Seção Filtrada - Tempo: {str(time_step.values)[:10]}", filt_path)
 
 
