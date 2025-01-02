@@ -232,39 +232,108 @@ def perpendicular_line(lon, lat, angle, length=1):
     dlat = length * np.sin(angle_rad)
     return [(lon + dlon, lat + dlat), (lon, lat)]
 
+
+# inicia em 0, nao em -50
 pts_cross = pd.DataFrame({
-    'lon':{0:-49.675,
-           1: -47.52,
-           2: -46.825,
-           3: -44.63,
-           4: -42.541667,
-           5: -40.89,
-           6: -40.281667,
-           7: -38.61,
-           8:-38.843861,
-           9: -38.23,
-           10:-36.918087,
-           11: -36.44,
-           12:-35.099074,
-           13: -34.76},
-    'lat':{0:-30.003125,
-           1: - 31.05,
-           2: - 25,
-           3: -27.67,
-           4: -23,
-           5: -26.92,
-           6: -21,
-           7: -21.92,
-           8: -15,
-           9: -14.99,
-           10:-11,
-           11: -11.54,
-           12:- 5,
-           13: -4.9}
+    'lon':{0:-50.57,
+        1: -48.3,
+        2: -47.85,
+        3: -44.63,
+        4: -42.02,
+        5: -40.89,
+        6: -40.81,
+        7: -38.52,
+        8:-38.99,
+        9: -38.23,
+        10:-37.05,
+        11: -36.41,
+        12:-36.83,
+        13: -36.22},
+    'lat':{0:-30.87,
+        1: - 32.13,
+        2: - 25,
+        3: -27.67,
+        4: -23,
+        5: -26.92,
+        6: -21,
+        7: -21.57,
+        8: -15,
+        9: -14.99,
+        10:-11,
+        11: -11.53,
+        12:- 5,
+        13: -3.81}
     }
 )
 
+# pts_cross = pd.DataFrame({
+#     'lon':{0:-49.675,
+#            1: -47.52,
+#            2: -46.825,
+#            3: -44.63,
+#            4: -42.541667,
+#            5: -40.89,
+#            6: -40.281667,
+#            7: -38.61,
+#            8:-38.843861,
+#            9: -38.23,
+#            10:-36.918087,
+#            11: -36.44,
+#            12:-35.099074,
+#            13: -34.76},
+#     'lat':{0:-30.003125,
+#            1: - 31.05,
+#            2: - 25,
+#            3: -27.67,
+#            4: -23,
+#            5: -26.92,
+#            6: -21,
+#            7: -21.92,
+#            8: -15,
+#            9: -14.99,
+#            10:-11,
+#            11: -11.54,
+#            12:- 5,
+#            13: -4.9}
+#     }
+# )
+
 # plot_pts(pts_cross)
+
+# Função para calcular o novo ponto final
+def calculate_new_endpoints(df, distance_km=500, km_per_degree=111.11):
+    new_points = []
+    
+    for i in range(0, len(df), 2):
+        # Coordenadas iniciais
+        lat1, lon1 = df.loc[i, 'lat'], df.loc[i, 'lon']
+        lat2, lon2 = df.loc[i + 1, 'lat'], df.loc[i + 1, 'lon']
+        
+        # Diferenças de latitude e longitude
+        delta_lat = lat2 - lat1
+        delta_lon = lon2 - lon1
+        
+        # Ângulo da linha
+        angle = np.arctan2(delta_lat, delta_lon)
+        
+        # Deslocamentos para 300 km
+        delta_lat_new = (distance_km * np.sin(angle)) / km_per_degree
+        delta_lon_new = (distance_km * np.cos(angle)) / km_per_degree
+        
+        # Novo ponto final
+        new_lat = lat1 + delta_lat_new
+        new_lon = lon1 + delta_lon_new
+        
+        # Adicionar ponto inicial e novo final à lista
+        new_points.append({'lat': lat1, 'lon': lon1})
+        new_points.append({'lat': new_lat, 'lon': new_lon})
+    
+    return pd.DataFrame(new_points)
+
+
+pts_cross = calculate_new_endpoints(pts_cross)
+
+
 
 lines_plot = []
 for i in range(len(pts_cross)):
@@ -277,3 +346,4 @@ for i in range(len(pts_cross)):
 
     lines_plot.append(cross_line)
 plot_line(lines_plot)
+print(pts_cross)
