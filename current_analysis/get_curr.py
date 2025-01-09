@@ -189,20 +189,6 @@ def old_get_cross_points():
 def get_cross_points():
     # inicia em 0, nao em -50
     pts_cross = pd.DataFrame({
-        {'lat': {0: -30.87,
-        1: -33.05394323166,
-        2: -25.0,
-        3: -27.872384662368383,
-        4: -23.0,
-        5: -27.32397528552412,
-        6: -21.0,
-        7: -22.086933823530387,
-        8: -15.0,
-        9: -14.940794006523781,
-        10: -11.0,
-        11: -13.870191572249867,
-        12: -5.0,
-        13: -0.995431075920779},
         'lon': {0: -50.57,
         1: -46.635435606453804,
         2: -47.85,
@@ -216,7 +202,21 @@ def get_cross_points():
         10: -37.05,
         11: -33.58410829011336,
         12: -36.83,
-        13: -34.77723777841317}}
+        13: -34.77723777841317}, 
+        'lat': {0: -30.87,
+        1: -33.05394323166,
+        2: -25.0,
+        3: -27.872384662368383,
+        4: -23.0,
+        5: -27.32397528552412,
+        6: -21.0,
+        7: -22.086933823530387,
+        8: -15.0,
+        9: -14.940794006523781,
+        10: -11.0,
+        11: -13.870191572249867,
+        12: -5.0,
+        13: -0.995431075920779}
     })
     return pts_cross
 
@@ -637,6 +637,7 @@ def four_window_fig_filt(top_e, top_d, bot_e, bot_d, path):
 
 reanal = {}
 years = range(1993, 2023)
+years = [2014]
 for year in years:
 
     reanal[year] = set_reanalisys_curr_dims(xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
@@ -663,7 +664,6 @@ s = 0
 for section in sections:
     s+=1
     print(f'Iniciando seção {s}')
-# section = sections[0]
 
 
     delta_lon = section['lon'].values[-1] - section['lon'].values[0]
@@ -704,33 +704,17 @@ for section in sections:
     )
 
     # Adicionar as componentes rotacionadas ao Dataset
-    along_shore = along_shore.chunk({'depth': 13, 'latitude': 16, 'longitude': 27, 'time': 30})
+    along_shore = along_shore.chunk({'depth': 17, 'latitude': 28, 'longitude': 45, 'time': 30})
     print('comecou a computar os dados along_shore')
     along_shore = along_shore.compute()
     print('terminou')
-    reanal_subset['along_shore'] = along_shore
+    reanal_subset['along_shore'] =  along_shore.transpose("time", "depth", "latitude", "longitude")
     reanal_subset['cross_shore'] = cross_shore
 
     # fazendo a mesma coisa para filtrado:
 
-    reanal_subset['u_filt'] = model_filt.filtra_reanalise_u(reanal_subset)
-    reanal_subset['v_filt'] = model_filt.filtra_reanalise_v(reanal_subset)
+    reanal_subset['along_shore_filt'] = model_filt.filtra_reanalise_along(reanal_subset)
 
-    along_shore_filt, cross_shore_filt = xr.apply_ufunc(
-        rotate_current,
-        reanal_subset['u_filt'],  # Entrada U
-        reanal_subset['v_filt'],  # Entrada V
-        theta_deg,           # Ângulo como escalar
-        input_core_dims=[["time"], ["time"], []],  # Dimensão relevante é apenas o tempso
-        output_core_dims=[["time"], ["time"]],    # Saídas têm apenas dimensão de tempo
-        vectorize=True,  # Permite a aplicação para todas as grades
-        dask="parallelized",  # Habilita o processamento paralelo
-        output_dtypes=[reanal_subset['u'].dtype, reanal_subset['v'].dtype]
-    )
-
-    # Adicionar as componentes rotacionadas ao Dataset
-    reanal_subset['along_shore_filt'] = along_shore_filt
-    reanal_subset['cross_shore_filt'] = cross_shore_filt
 
     ## iterar na mao:
 
