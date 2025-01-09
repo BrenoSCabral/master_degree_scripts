@@ -61,3 +61,17 @@ def filtra_reanalise_v(model):
                 )
 
     return filtered_ds
+
+
+def filtra_reanalise_along(model):
+    b, a = passa_banda()
+    filtered_model = signal.filtfilt(b, a, model['along_shore'], axis=0)
+
+    filtered_ds = xr.DataArray(
+                filtered_model,
+                coords=model['along_shore'].coords,
+                dims=model['along_shore'].dims,
+                attrs=model['along_shore'].attrs
+                )
+
+    return filtered_ds
