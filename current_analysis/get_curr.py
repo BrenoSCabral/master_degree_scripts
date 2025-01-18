@@ -715,6 +715,85 @@ def four_window_custom(dep_sup, dep_bot, lon_e, lon_d, top_e, top_d, bot_e, bot_
     plt.savefig(path)
 
 
+def four_window_custom_sem_lim(dep_sup, dep_bot, lon_e, lon_d, top_e, top_d, bot_e, bot_d, path, cmap='magma'):
+
+    fig, ax = plt.subplots(2,2, figsize=(12,9))
+
+
+    # dep_sup = reanal_subset['depth'].sel(depth=slice(0,400))
+    # dep_bot = reanal_subset['depth'].sel(depth=slice(400,10000))
+
+    # lon_e = lons[:6] # reanal_subset['longitude'].sel(longitude=slice(lons[0], lons[5]))
+    # lon_d = lons[5:] # reanal_subset['longitude'].sel(longitude=slice(lons[5], lons[9]))
+
+    im1 = ax[0,0].contourf(lon_e, -dep_sup, np.array(top_e).T, cmap=cmap)
+    ax[0,0].set_facecolor([0,0,0,0.6]) 
+
+
+    cs1 = ax[0,0].contour(lon_e, -dep_sup, np.array(top_e).T, colors='black', linestyles= 'dashed',linewidths=0.5)
+    ax[0,0].clabel(cs1, inline=True,fontsize=10)
+
+    # ax[0,0].set_xlim(-55, -45)
+    #ax[0,0].set_xlabel("Longitude (°)")
+    ax[0,0].set_ylabel("Depth (m)")
+    ax[0,0].set_xticks([])
+
+    ax[0,0].set_title('Alongshore Flux: 0 - 200m', fontsize=10, loc='left')
+
+    ## Direita superior -----------------------------------
+
+
+
+    im1 = ax[0,1].contourf(lon_d, -dep_sup, np.array(top_d).T, cmap=cmap)
+    ax[0,1].set_facecolor([0,0,0,0.6]) 
+    #plt.colorbar(im1, label='Mean Temperature (°C)', extend='both', 
+    #             orientation='vertical', pad=0.02, fraction=0.05, ax = ax[0,1])
+
+    cs1 = ax[0,1].contour(lon_d, -dep_sup, np.array(top_d).T, colors='black', linestyles= 'dashed',linewidths=0.5)
+    ax[0,1].clabel(cs1, inline=True,fontsize=10)
+
+    ax[0,1].set_yticks([])
+    ax[0,1].set_xticks([])
+
+
+    ## Esquerda Inferior -----------------------------------
+
+
+    im2 = ax[1,0].contourf(lon_e, -dep_bot, np.array(bot_e).T, cmap=cmap)
+    ax[1,0].set_facecolor([0,0,0,0.6]) 
+
+    cs2 = ax[1,0].contour(lon_e, -dep_bot, np.array(bot_e).T, colors='black', linestyles= 'dashed',linewidths=0.5)
+    ax[1,0].clabel(cs2, inline=True,fontsize=10)
+
+
+    ax[1,0].set_ylabel("Depth (m)")
+
+
+    ax[1,0].annotate("South America", xy=(-53, -4000), rotation=90, 
+                fontsize=11, fontweight='bold', color='black', ha='center',va='center',
+                bbox=dict(boxstyle="round,pad=0.2",fc="w", alpha=0.7))
+
+    ax[1,0].set_title('Alongshore Flux: 200 - 4500m', fontsize=10, loc='left')
+
+
+    ## Direita Inferior -----------------------------------
+
+
+
+    im2 = ax[1,1].contourf(lon_d, - dep_bot, np.array(bot_d).T, cmap=cmap)
+    ax[1,1].set_facecolor([0,0,0,0.6]) 
+
+    cs2 = ax[1,1].contour(lon_d, - dep_bot, np.array(bot_d).T, colors='black', linestyles= 'dashed',linewidths=0.5)
+    ax[1,1].clabel(cs2, inline=True,fontsize=10)
+
+    ax[1,1].set_yticks([])
+
+    # plt.tight_layout()
+    #plt.suptitle('Latitude: '+lat_corte+'°', fontsize=10, loc='center')
+    plt.suptitle('Reanalysis: BRAN', fontsize=10, fontweight='bold',x=0.85)
+
+    plt.savefig(path)
+
 # reanal = xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
 # print('______________________________')
 # print(model, list(reanal.indexes))# list(reanal.keys()))
@@ -915,26 +994,30 @@ for section in sections:
                         lons[:m_lons+1], lons[m_lons:],
                             mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/mean',
                             np.arange(-vals_mean_max, vals_mean_max,round((vals_mean_max*2)/10,2)), cmap='bwr')
-
-        vals_var = np.array([abs(np.nanmax(var_top)), abs(np.nanmax(var_bot)),
-                            abs(np.nanmin(var_top)), abs(np.nanmin(var_bot))])
         
-        vals_var_max = np.round(np.max(vals_var),2)
-
-        four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+        four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
                         lons[:m_lons+1], lons[m_lons:],
-                        var_top_e, var_top_d, var_bot_e, var_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var',
-                        np.arange(0,vals_var_max, vals_var_max/10))
+                            mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/mean_sem_lim', cmap='bwr')
 
-        vals_varf = np.array([abs(np.nanmax(varf_top)), abs(np.nanmax(varf_bot)),
-                            abs(np.nanmin(varf_top)), abs(np.nanmin(varf_bot))])
+        # vals_var = np.array([abs(np.nanmax(var_top)), abs(np.nanmax(var_bot)),
+        #                     abs(np.nanmin(var_top)), abs(np.nanmin(var_bot))])
         
-        vals_varf_max = np.round(np.max(vals_varf),2)
+        # vals_var_max = np.round(np.max(vals_var),2)
 
-        four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
-                        lons[:m_lons+1], lons[m_lons:],
-                        varf_top_e, varf_top_d, varf_bot_e, varf_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_filt',
-                        np.arange(0,vals_varf_max, vals_varf_max/10))
+        # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+        #                 lons[:m_lons+1], lons[m_lons:],
+        #                 var_top_e, var_top_d, var_bot_e, var_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var',
+        #                 np.arange(0,vals_var_max, vals_var_max/10))
+
+        # vals_varf = np.array([abs(np.nanmax(varf_top)), abs(np.nanmax(varf_bot)),
+        #                     abs(np.nanmin(varf_top)), abs(np.nanmin(varf_bot))])
+        
+        # vals_varf_max = np.round(np.max(vals_varf),2)
+
+        # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+        #                 lons[:m_lons+1], lons[m_lons:],
+        #                 varf_top_e, varf_top_d, varf_bot_e, varf_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_filt',
+        #                 np.arange(0,vals_varf_max, vals_varf_max/10))
 
         perc_top_e = (np.asarray(varf_top_e)/np.asarray(var_top_e)) * 100
         perc_top_d = (np.asarray(varf_top_d)/np.asarray(var_top_d)) * 100
@@ -944,24 +1027,28 @@ for section in sections:
         four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
                         lons[:m_lons+1], lons[m_lons:],
                         perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_perc', np.arange(0,101,10))
-
-        dif_top_e = np.asarray(var_top_e) - np.asarray(varf_top_e)
-        dif_top_d = np.asarray(var_top_d) - np.asarray(varf_top_d)
-        dif_bot_e = np.asarray(var_bot_e) - np.asarray(varf_bot_e)
-        dif_bot_d = np.asarray(var_bot_d) - np.asarray(varf_bot_d)
-
-        vals_dif = np.array([abs(np.nanmax(dif_top_e)), abs(np.nanmax(dif_bot_e)), abs(np.nanmax(dif_top_d)), abs(np.nanmax(dif_bot_d)),
-                            abs(np.nanmin(dif_top_e)), abs(np.nanmin(dif_bot_e)), abs(np.nanmin(dif_top_d)), abs(np.nanmin(dif_bot_d))])
         
-        vals_dif_max = np.round(np.nanmax(vals_dif),2)
-        
-        if np.isnan(np.nan):
-            vals_dif_max = .05
-
-        four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+        four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
                         lons[:m_lons+1], lons[m_lons:],
-                        dif_top_e, dif_top_d, dif_bot_e, dif_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_diff',
-                        np.arange(0,vals_dif_max,vals_dif_max/10))
+                        perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_perc_sem_lim')
+
+        # dif_top_e = np.asarray(var_top_e) - np.asarray(varf_top_e)
+        # dif_top_d = np.asarray(var_top_d) - np.asarray(varf_top_d)
+        # dif_bot_e = np.asarray(var_bot_e) - np.asarray(varf_bot_e)
+        # dif_bot_d = np.asarray(var_bot_d) - np.asarray(varf_bot_d)
+
+        # vals_dif = np.array([abs(np.nanmax(dif_top_e)), abs(np.nanmax(dif_bot_e)), abs(np.nanmax(dif_top_d)), abs(np.nanmax(dif_bot_d)),
+        #                     abs(np.nanmin(dif_top_e)), abs(np.nanmin(dif_bot_e)), abs(np.nanmin(dif_top_d)), abs(np.nanmin(dif_bot_d))])
+        
+        # vals_dif_max = np.round(np.nanmax(vals_dif),2)
+        
+        # if np.isnan(np.nan):
+        #     vals_dif_max = .05
+
+        # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+        #                 lons[:m_lons+1], lons[m_lons:],
+        #                 dif_top_e, dif_top_d, dif_bot_e, dif_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_diff',
+        #                 np.arange(0,vals_dif_max,vals_dif_max/10))
         
     # fazendo pra media do tempo:
     print('total')
@@ -1070,25 +1157,29 @@ for section in sections:
                         mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/total/mean',
                         np.arange(-vals_mean_max, vals_mean_max,round((vals_mean_max*2)/10,2)), cmap='bwr')
 
-    vals_var = np.array([abs(np.nanmax(var_top)), abs(np.nanmax(var_bot)),
-                        abs(np.nanmin(var_top)), abs(np.nanmin(var_bot))])
-    
-    vals_var_max = np.round(np.max(vals_var),2)
 
-    four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+    four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
                     lons[:m_lons+1], lons[m_lons:],
-                    var_top_e, var_top_d, var_bot_e, var_bot_d, output_dir+f'/curr_comp/{s}/total/var',
-                    np.arange(0,vals_var_max, vals_var_max/10))
-
-    vals_varf = np.array([abs(np.nanmax(varf_top)), abs(np.nanmax(varf_bot)),
-                        abs(np.nanmin(varf_top)), abs(np.nanmin(varf_bot))])
+                        mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/total/mean_sem_lim', cmap='bwr')
+    # vals_var = np.array([abs(np.nanmax(var_top)), abs(np.nanmax(var_bot)),
+    #                     abs(np.nanmin(var_top)), abs(np.nanmin(var_bot))])
     
-    vals_varf_max = np.round(np.max(vals_varf),2)
+    # vals_var_max = np.round(np.max(vals_var),2)
 
-    four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
-                    lons[:m_lons+1], lons[m_lons:],
-                    varf_top_e, varf_top_d, varf_bot_e, varf_bot_d, output_dir+f'/curr_comp/{s}/total/var_filt',
-                    np.arange(0,vals_varf_max, vals_varf_max/10))
+    # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+    #                 lons[:m_lons+1], lons[m_lons:],
+    #                 var_top_e, var_top_d, var_bot_e, var_bot_d, output_dir+f'/curr_comp/{s}/total/var',
+    #                 np.arange(0,vals_var_max, vals_var_max/10))
+
+    # vals_varf = np.array([abs(np.nanmax(varf_top)), abs(np.nanmax(varf_bot)),
+    #                     abs(np.nanmin(varf_top)), abs(np.nanmin(varf_bot))])
+    
+    # vals_varf_max = np.round(np.max(vals_varf),2)
+
+    # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+    #                 lons[:m_lons+1], lons[m_lons:],
+    #                 varf_top_e, varf_top_d, varf_bot_e, varf_bot_d, output_dir+f'/curr_comp/{s}/total/var_filt',
+    #                 np.arange(0,vals_varf_max, vals_varf_max/10))
 
     perc_top_e = (np.asarray(varf_top_e)/np.asarray(var_top_e)) * 100
     perc_top_d = (np.asarray(varf_top_d)/np.asarray(var_top_d)) * 100
@@ -1098,24 +1189,1255 @@ for section in sections:
     four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
                     lons[:m_lons+1], lons[m_lons:],
                     perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/total/var_perc', np.arange(0,101,10))
-
-    dif_top_e = np.asarray(var_top_e) - np.asarray(varf_top_e)
-    dif_top_d = np.asarray(var_top_d) - np.asarray(varf_top_d)
-    dif_bot_e = np.asarray(var_bot_e) - np.asarray(varf_bot_e)
-    dif_bot_d = np.asarray(var_bot_d) - np.asarray(varf_bot_d)
-
-    vals_dif = np.array([abs(np.nanmax(dif_top_e)), abs(np.nanmax(dif_bot_e)), abs(np.nanmax(dif_top_d)), abs(np.nanmax(dif_bot_d)),
-                        abs(np.nanmin(dif_top_e)), abs(np.nanmin(dif_bot_e)), abs(np.nanmin(dif_top_d)), abs(np.nanmin(dif_bot_d))])
     
-    vals_dif_max = np.round(np.nanmax(vals_dif),2)
+    four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    lons[:m_lons+1], lons[m_lons:],
+                    perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/total/var_perc')
 
-    if np.isnan(np.nan):
-        vals_dif_max = .05
+    # dif_top_e = np.asarray(var_top_e) - np.asarray(varf_top_e)
+    # dif_top_d = np.asarray(var_top_d) - np.asarray(varf_top_d)
+    # dif_bot_e = np.asarray(var_bot_e) - np.asarray(varf_bot_e)
+    # dif_bot_d = np.asarray(var_bot_d) - np.asarray(varf_bot_d)
+
+    # vals_dif = np.array([abs(np.nanmax(dif_top_e)), abs(np.nanmax(dif_bot_e)), abs(np.nanmax(dif_top_d)), abs(np.nanmax(dif_bot_d)),
+    #                     abs(np.nanmin(dif_top_e)), abs(np.nanmin(dif_bot_e)), abs(np.nanmin(dif_top_d)), abs(np.nanmin(dif_bot_d))])
+    
+    # vals_dif_max = np.round(np.nanmax(vals_dif),2)
+
+    # if np.isnan(np.nan):
+    #     vals_dif_max = .05
         
+    # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+    #                 lons[:m_lons+1], lons[m_lons:],
+    #                 dif_top_e, dif_top_d, dif_bot_e, dif_bot_d, output_dir+f'/curr_comp/{s}/total/var_diff',
+    #                 np.arange(0,vals_dif_max,vals_dif_max/10))
+
+
+##############
+#
+#  GAMBIARRA MAXIMA PRA NAO PRECISAR ADAPTAR
+#
+################
+
+
+s = 0
+for section in sections:
+    s+=1
+    print(f'Iniciando seção {s}')
+    mean_time = []
+    var_time = []
+    varf_time = []
+    for year in years:
+        reanal = {}
+        print('comecando ' + str(year))
+
+        reanal[year] = set_reanalisys_curr_dims(xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
+                                            , model)
+
+        reanalisys = xr.concat(list(reanal.values()), dim="time")
+        # year = 'total'
+        # define a linha que eu vou plotar
+
+        delta_lon = section['lon'].values[-1] - section['lon'].values[0]
+        delta_lat = section['lat'].values[-1] - section['lat'].values[0]
+        theta_rad = np.arctan2(delta_lat, delta_lon) + np.pi/2# Ângulo em radianos
+        theta_deg = np.degrees(theta_rad)  # Convertendo para graus
+
+
+        lat_i = section['lat'].min() - 0.3
+        lat_f = section['lat'].max() + 0.3
+        lon_i = section['lon'].min() - 0.3
+        lon_f = section['lon'].max() + 0.3
+
+        # preciso pegar agora o quadrilatero em torno da linha pra fazer a interpolacao
+        reanal_subset = reanalisys.where((reanalisys.latitude < lat_f) & 
+                                    (reanalisys.longitude < lon_f) &
+                                    (reanalisys.latitude > lat_i) & 
+                                    (reanalisys.longitude > lon_i) ,
+                                    drop=True)
+
+        # rotacionar direto o reanal_subset pode ser mais facil
+
+
+
+        # Aplicar a rotação a cada ponto de grade
+        reanal_subset = reanal_subset.chunk(dict(time=-1))
+
+        along_shore, cross_shore = xr.apply_ufunc(
+            rotate_current,
+            reanal_subset['u'],  # Entrada U
+            reanal_subset['v'],  # Entrada V
+            theta_deg,           # Ângulo como escalar
+            input_core_dims=[["time"], ["time"], []],  # Dimensão relevante é apenas o tempo
+            output_core_dims=[["time"], ["time"]],    # Saídas têm apenas dimensão de tempo
+            vectorize=True,  # Permite a aplicação para todas as grades
+            dask="parallelized",  # Habilita o processamento paralelo
+            output_dtypes=[reanal_subset['u'].dtype, reanal_subset['v'].dtype]
+        )
+
+        # Adicionar as componentes rotacionadas ao Dataset
+        along_shore = along_shore.chunk({'depth': 17, 'latitude': 28, 'longitude': 45, 'time': 30})
+        print('comecou a computar os dados along_shore')
+        along_shore = along_shore.compute()
+        print('terminou')
+        reanal_subset['along_shore'] =  cross_shore.transpose("time", "depth", "latitude", "longitude")
+        reanal_subset['cross_shore'] = cross_shore
+
+        # fazendo a mesma coisa para filtrado:
+
+        reanal_subset['along_shore_filt'] = model_filt.filtra_reanalise_along(reanal_subset)
+
+
+        # pegar a variância e a média do along_shore
+        mean_along = reanal_subset['along_shore'].mean(dim='time')
+        var_along = reanal_subset['along_shore'].var(dim='time')
+
+        # pegar a variância do along_shore_filt
+        var_alongf = reanal_subset['along_shore_filt'].var(dim='time')
+
+        lats = section['lat'].values
+        lons = section['lon'].values
+
+        mean_time.append(mean_along)
+        var_time.append(var_along)
+        varf_time.append(var_alongf)
+
+
+
+
+        # Selecionar a variável
+        mean_top= mean_along.sel(depth=slice(0,200))
+        mean_bot= mean_along.sel(depth=slice(200,999999))
+
+        var_top= var_along.sel(depth=slice(0,200))
+        var_bot= var_along.sel(depth=slice(200,999999))
+
+        varf_top = var_alongf.sel(depth=slice(0,200))
+        varf_bot = var_alongf.sel(depth=slice(200,999999))
+
+
+        mean_top_e = []
+        mean_top_d = []
+        mean_bot_e = []
+        mean_bot_d = []
+
+        var_top_e = []
+        var_top_d = []
+        var_bot_e = []
+        var_bot_d = []
+
+        varf_top_e = []
+        varf_top_d = []
+        varf_bot_e = []
+        varf_bot_d = []
+
+        
+        for lat, lon in zip(lats, lons):
+            m_lons = int(len(lons)/4) 
+            # filt.append(reanal_subset['along_shore_filt'].sel(latitude=lat, longitude=lon, time=time_selected, method='nearest'))
+            # raw.append(reanal_subset['along_shore'].sel(latitude=lat, longitude=lon,time=time_selected, method='nearest'))
+
+            if lon < lons[m_lons]:
+            # Extrair o perfil em profundidade para o par (lat, lon)
+                mean_top_e.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                mean_bot_e.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                var_top_e.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                var_bot_e.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                varf_top_e.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                varf_bot_e.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            elif lon == lons[m_lons]:
+                mean_top_e.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                mean_bot_e.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                var_top_e.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                var_bot_e.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                varf_top_e.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                varf_bot_e.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+        
+                mean_top_d.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                mean_bot_d.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                var_top_d.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                var_bot_d.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                varf_top_d.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                varf_bot_d.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            else:
+                mean_top_d.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                mean_bot_d.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                var_top_d.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                var_bot_d.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                varf_top_d.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                varf_bot_d.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+        output_dir = f'/home/bcabral/mestrado/fig/secmean/secao{s}/'
+        os.makedirs(output_dir + f'/curr_comp/{s}/{year}/mean', exist_ok=True)
+        # os.makedirs(output_dir + f'/var/{str(year)}', exist_ok=True)
+        # os.makedirs(output_dir + f'/varf/{str(year)}', exist_ok=True)
+
+
+        # def four_window_custom(dep_sup, dep_bot, lon_e, lon_d, top_e, top_d, bot_e, bot_d, path, ticks = None):
+
+
+        # lon_e = lons[:6] # reanal_subset['longitude'].sel(longitude=slice(lons[0], lons[5]))
+        # lon_d = lons[5:] # reanal_subset['longitude'].sel(longitude=slice(lons[5], lons[9]))
+
+        print('comecando plot ')
+
+        vals_mean = np.array([abs(np.nanmax(mean_top)), abs(np.nanmax(mean_bot)),
+                            abs(np.nanmin(mean_top)), abs(np.nanmin(mean_bot))])
+        
+        vals_mean_max = np.round(np.max(vals_mean),2)
+
+        four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        lons[:m_lons+1], lons[m_lons:],
+                            mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/mean_cross',
+                            np.arange(-vals_mean_max, vals_mean_max,round((vals_mean_max*2)/10,2)), cmap='bwr')
+        
+        four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        lons[:m_lons+1], lons[m_lons:],
+                            mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/mean_sem_lim_cross', cmap='bwr')
+
+        # vals_var = np.array([abs(np.nanmax(var_top)), abs(np.nanmax(var_bot)),
+        #                     abs(np.nanmin(var_top)), abs(np.nanmin(var_bot))])
+        
+        # vals_var_max = np.round(np.max(vals_var),2)
+
+        # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+        #                 lons[:m_lons+1], lons[m_lons:],
+        #                 var_top_e, var_top_d, var_bot_e, var_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var',
+        #                 np.arange(0,vals_var_max, vals_var_max/10))
+
+        # vals_varf = np.array([abs(np.nanmax(varf_top)), abs(np.nanmax(varf_bot)),
+        #                     abs(np.nanmin(varf_top)), abs(np.nanmin(varf_bot))])
+        
+        # vals_varf_max = np.round(np.max(vals_varf),2)
+
+        # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+        #                 lons[:m_lons+1], lons[m_lons:],
+        #                 varf_top_e, varf_top_d, varf_bot_e, varf_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_filt',
+        #                 np.arange(0,vals_varf_max, vals_varf_max/10))
+
+        perc_top_e = (np.asarray(varf_top_e)/np.asarray(var_top_e)) * 100
+        perc_top_d = (np.asarray(varf_top_d)/np.asarray(var_top_d)) * 100
+        perc_bot_e = (np.asarray(varf_bot_e)/np.asarray(var_bot_e)) * 100
+        perc_bot_d = (np.asarray(varf_bot_d)/np.asarray(var_bot_d)) * 100
+
+        four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        lons[:m_lons+1], lons[m_lons:],
+                        perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_perc_cross', np.arange(0,101,10))
+        
+        four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        lons[:m_lons+1], lons[m_lons:],
+                        perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_perc_sem_lim_cross')
+
+        # dif_top_e = np.asarray(var_top_e) - np.asarray(varf_top_e)
+        # dif_top_d = np.asarray(var_top_d) - np.asarray(varf_top_d)
+        # dif_bot_e = np.asarray(var_bot_e) - np.asarray(varf_bot_e)
+        # dif_bot_d = np.asarray(var_bot_d) - np.asarray(varf_bot_d)
+
+        # vals_dif = np.array([abs(np.nanmax(dif_top_e)), abs(np.nanmax(dif_bot_e)), abs(np.nanmax(dif_top_d)), abs(np.nanmax(dif_bot_d)),
+        #                     abs(np.nanmin(dif_top_e)), abs(np.nanmin(dif_bot_e)), abs(np.nanmin(dif_top_d)), abs(np.nanmin(dif_bot_d))])
+        
+        # vals_dif_max = np.round(np.nanmax(vals_dif),2)
+        
+        # if np.isnan(np.nan):
+        #     vals_dif_max = .05
+
+        # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+        #                 lons[:m_lons+1], lons[m_lons:],
+        #                 dif_top_e, dif_top_d, dif_bot_e, dif_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_diff',
+        #                 np.arange(0,vals_dif_max,vals_dif_max/10))
+        
+    # fazendo pra media do tempo:
+    print('total')
+
+    mean_time_concat = xr.concat(mean_time, dim="year")
+    var_time_concat = xr.concat(var_time, dim="year")
+    varf_time_concat = xr.concat(varf_time, dim="year")
+
+    # Calcular a média ao longo dos anos
+    mean_time_avg = mean_time_concat.mean(dim="year")
+    var_time_avg = var_time_concat.mean(dim="year")
+    varf_time_avg = varf_time_concat.mean(dim="year")
+
+    # Selecionar a variável
+    mean_top= mean_time_avg.sel(depth=slice(0,200))
+    mean_bot= mean_time_avg.sel(depth=slice(200,999999))
+
+    var_top= var_time_avg.sel(depth=slice(0,200))
+    var_bot= var_time_avg.sel(depth=slice(200,999999))
+
+    varf_top = varf_time_avg.sel(depth=slice(0,200))
+    varf_bot = varf_time_avg.sel(depth=slice(200,999999))
+
+
+    mean_top_e = []
+    mean_top_d = []
+    mean_bot_e = []
+    mean_bot_d = []
+
+    var_top_e = []
+    var_top_d = []
+    var_bot_e = []
+    var_bot_d = []
+
+    varf_top_e = []
+    varf_top_d = []
+    varf_bot_e = []
+    varf_bot_d = []
+
+    
+    for lat, lon in zip(lats, lons):
+        m_lons = int(len(lons)/4) 
+        # filt.append(reanal_subset['along_shore_filt'].sel(latitude=lat, longitude=lon, time=time_selected, method='nearest'))
+        # raw.append(reanal_subset['along_shore'].sel(latitude=lat, longitude=lon,time=time_selected, method='nearest'))
+
+        if lon < lons[m_lons]:
+        # Extrair o perfil em profundidade para o par (lat, lon)
+            mean_top_e.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            mean_bot_e.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            var_top_e.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            var_bot_e.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            varf_top_e.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            varf_bot_e.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+        elif lon == lons[m_lons]:
+            mean_top_e.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            mean_bot_e.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            var_top_e.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            var_bot_e.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            varf_top_e.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            varf_bot_e.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+    
+            mean_top_d.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            mean_bot_d.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            var_top_d.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            var_bot_d.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            varf_top_d.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            varf_bot_d.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+        else:
+            mean_top_d.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            mean_bot_d.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            var_top_d.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            var_bot_d.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            varf_top_d.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            varf_bot_d.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+    output_dir = f'/home/bcabral/mestrado/fig/secmean/secao{s}/'
+    os.makedirs(output_dir + f'/curr_comp/{s}/total/mean', exist_ok=True)
+    # os.makedirs(output_dir + f'/var/{str(year)}', exist_ok=True)
+    # os.makedirs(output_dir + f'/varf/{str(year)}', exist_ok=True)
+
+
+    # def four_window_custom(dep_sup, dep_bot, lon_e, lon_d, top_e, top_d, bot_e, bot_d, path, ticks = None):
+
+
+    # lon_e = lons[:6] # reanal_subset['longitude'].sel(longitude=slice(lons[0], lons[5]))
+    # lon_d = lons[5:] # reanal_subset['longitude'].sel(longitude=slice(lons[5], lons[9]))
+
+
+    vals_mean = np.array([abs(np.nanmax(mean_top)), abs(np.nanmax(mean_bot)),
+                        abs(np.nanmin(mean_top)), abs(np.nanmin(mean_bot))])
+    
+    vals_mean_max = np.round(np.max(vals_mean),2)
+
     four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
                     lons[:m_lons+1], lons[m_lons:],
-                    dif_top_e, dif_top_d, dif_bot_e, dif_bot_d, output_dir+f'/curr_comp/{s}/total/var_diff',
-                    np.arange(0,vals_dif_max,vals_dif_max/10))
+                        mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/total/mean_cross',
+                        np.arange(-vals_mean_max, vals_mean_max,round((vals_mean_max*2)/10,2)), cmap='bwr')
+
+
+    four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    lons[:m_lons+1], lons[m_lons:],
+                        mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/total/mean_sem_lim_cross', cmap='bwr')
+    # vals_var = np.array([abs(np.nanmax(var_top)), abs(np.nanmax(var_bot)),
+    #                     abs(np.nanmin(var_top)), abs(np.nanmin(var_bot))])
+    
+    # vals_var_max = np.round(np.max(vals_var),2)
+
+    # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+    #                 lons[:m_lons+1], lons[m_lons:],
+    #                 var_top_e, var_top_d, var_bot_e, var_bot_d, output_dir+f'/curr_comp/{s}/total/var',
+    #                 np.arange(0,vals_var_max, vals_var_max/10))
+
+    # vals_varf = np.array([abs(np.nanmax(varf_top)), abs(np.nanmax(varf_bot)),
+    #                     abs(np.nanmin(varf_top)), abs(np.nanmin(varf_bot))])
+    
+    # vals_varf_max = np.round(np.max(vals_varf),2)
+
+    # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+    #                 lons[:m_lons+1], lons[m_lons:],
+    #                 varf_top_e, varf_top_d, varf_bot_e, varf_bot_d, output_dir+f'/curr_comp/{s}/total/var_filt',
+    #                 np.arange(0,vals_varf_max, vals_varf_max/10))
+
+    perc_top_e = (np.asarray(varf_top_e)/np.asarray(var_top_e)) * 100
+    perc_top_d = (np.asarray(varf_top_d)/np.asarray(var_top_d)) * 100
+    perc_bot_e = (np.asarray(varf_bot_e)/np.asarray(var_bot_e)) * 100
+    perc_bot_d = (np.asarray(varf_bot_d)/np.asarray(var_bot_d)) * 100
+
+    four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    lons[:m_lons+1], lons[m_lons:],
+                    perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/total/var_perc_cross', np.arange(0,101,10))
+    
+    four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    lons[:m_lons+1], lons[m_lons:],
+                    perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/total/var_perc_cross')
+
+    # dif_top_e = np.asarray(var_top_e) - np.asarray(varf_top_e)
+    # dif_top_d = np.asarray(var_top_d) - np.asarray(varf_top_d)
+    # dif_bot_e = np.asarray(var_bot_e) - np.asarray(varf_bot_e)
+    # dif_bot_d = np.asarray(var_bot_d) - np.asarray(varf_bot_d)
+
+    # vals_dif = np.array([abs(np.nanmax(dif_top_e)), abs(np.nanmax(dif_bot_e)), abs(np.nanmax(dif_top_d)), abs(np.nanmax(dif_bot_d)),
+    #                     abs(np.nanmin(dif_top_e)), abs(np.nanmin(dif_bot_e)), abs(np.nanmin(dif_top_d)), abs(np.nanmin(dif_bot_d))])
+    
+    # vals_dif_max = np.round(np.nanmax(vals_dif),2)
+
+    # if np.isnan(np.nan):
+    #     vals_dif_max = .05
+        
+    # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+    #                 lons[:m_lons+1], lons[m_lons:],
+    #                 dif_top_e, dif_top_d, dif_bot_e, dif_bot_d, output_dir+f'/curr_comp/{s}/total/var_diff',
+    #                 np.arange(0,vals_dif_max,vals_dif_max/10))
+
+
+
+s = 0
+for section in sections:
+    s+=1
+    print(f'Iniciando seção {s}')
+    mean_time = []
+    var_time = []
+    varf_time = []
+    for year in years:
+        reanal = {}
+        print('comecando ' + str(year))
+
+        reanal[year] = set_reanalisys_curr_dims(xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
+                                            , model)
+
+        reanalisys = xr.concat(list(reanal.values()), dim="time")
+        # year = 'total'
+        # define a linha que eu vou plotar
+
+        delta_lon = section['lon'].values[-1] - section['lon'].values[0]
+        delta_lat = section['lat'].values[-1] - section['lat'].values[0]
+        theta_rad = np.arctan2(delta_lat, delta_lon) + np.pi/2# Ângulo em radianos
+        theta_deg = np.degrees(theta_rad)  # Convertendo para graus
+
+
+        lat_i = section['lat'].min() - 0.3
+        lat_f = section['lat'].max() + 0.3
+        lon_i = section['lon'].min() - 0.3
+        lon_f = section['lon'].max() + 0.3
+
+        # preciso pegar agora o quadrilatero em torno da linha pra fazer a interpolacao
+        reanal_subset = reanalisys.where((reanalisys.latitude < lat_f) & 
+                                    (reanalisys.longitude < lon_f) &
+                                    (reanalisys.latitude > lat_i) & 
+                                    (reanalisys.longitude > lon_i) ,
+                                    drop=True)
+
+        # rotacionar direto o reanal_subset pode ser mais facil
+
+
+
+        # Aplicar a rotação a cada ponto de grade
+        reanal_subset = reanal_subset.chunk(dict(time=-1))
+
+        # along_shore, cross_shore = xr.apply_ufunc(
+        #     rotate_current,
+        #     reanal_subset['u'],  # Entrada U
+        #     reanal_subset['v'],  # Entrada V
+        #     theta_deg,           # Ângulo como escalar
+        #     input_core_dims=[["time"], ["time"], []],  # Dimensão relevante é apenas o tempo
+        #     output_core_dims=[["time"], ["time"]],    # Saídas têm apenas dimensão de tempo
+        #     vectorize=True,  # Permite a aplicação para todas as grades
+        #     dask="parallelized",  # Habilita o processamento paralelo
+        #     output_dtypes=[reanal_subset['u'].dtype, reanal_subset['v'].dtype]
+        # )
+
+        # # Adicionar as componentes rotacionadas ao Dataset
+        # along_shore = along_shore.chunk({'depth': 17, 'latitude': 28, 'longitude': 45, 'time': 30})
+        # print('comecou a computar os dados along_shore')
+        # along_shore = along_shore.compute()
+        # print('terminou')
+        # reanal_subset['along_shore'] =  cross_shore.transpose("time", "depth", "latitude", "longitude")
+        # reanal_subset['cross_shore'] = cross_shore
+
+        # # fazendo a mesma coisa para filtrado:
+
+        reanal_subset['along_shore_filt'] = model_filt.filtra_reanalise_u(reanal_subset)
+
+
+        # pegar a variância e a média do along_shore
+        mean_along = reanal_subset['u'].mean(dim='time')
+        var_along = reanal_subset['u'].var(dim='time')
+
+        # pegar a variância do along_shore_filt
+        var_alongf = reanal_subset['along_shore_filt'].var(dim='time')
+
+        lats = section['lat'].values
+        lons = section['lon'].values
+
+        mean_time.append(mean_along)
+        var_time.append(var_along)
+        varf_time.append(var_alongf)
+
+
+
+
+        # Selecionar a variável
+        mean_top= mean_along.sel(depth=slice(0,200))
+        mean_bot= mean_along.sel(depth=slice(200,999999))
+
+        var_top= var_along.sel(depth=slice(0,200))
+        var_bot= var_along.sel(depth=slice(200,999999))
+
+        varf_top = var_alongf.sel(depth=slice(0,200))
+        varf_bot = var_alongf.sel(depth=slice(200,999999))
+
+
+        mean_top_e = []
+        mean_top_d = []
+        mean_bot_e = []
+        mean_bot_d = []
+
+        var_top_e = []
+        var_top_d = []
+        var_bot_e = []
+        var_bot_d = []
+
+        varf_top_e = []
+        varf_top_d = []
+        varf_bot_e = []
+        varf_bot_d = []
+
+        
+        for lat, lon in zip(lats, lons):
+            m_lons = int(len(lons)/4) 
+            # filt.append(reanal_subset['along_shore_filt'].sel(latitude=lat, longitude=lon, time=time_selected, method='nearest'))
+            # raw.append(reanal_subset['along_shore'].sel(latitude=lat, longitude=lon,time=time_selected, method='nearest'))
+
+            if lon < lons[m_lons]:
+            # Extrair o perfil em profundidade para o par (lat, lon)
+                mean_top_e.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                mean_bot_e.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                var_top_e.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                var_bot_e.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                varf_top_e.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                varf_bot_e.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            elif lon == lons[m_lons]:
+                mean_top_e.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                mean_bot_e.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                var_top_e.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                var_bot_e.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                varf_top_e.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                varf_bot_e.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+        
+                mean_top_d.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                mean_bot_d.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                var_top_d.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                var_bot_d.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                varf_top_d.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                varf_bot_d.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            else:
+                mean_top_d.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                mean_bot_d.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                var_top_d.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                var_bot_d.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                varf_top_d.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                varf_bot_d.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+        output_dir = f'/home/bcabral/mestrado/fig/secmean/secao{s}/'
+        os.makedirs(output_dir + f'/curr_comp/{s}/{year}/mean', exist_ok=True)
+        # os.makedirs(output_dir + f'/var/{str(year)}', exist_ok=True)
+        # os.makedirs(output_dir + f'/varf/{str(year)}', exist_ok=True)
+
+
+        # def four_window_custom(dep_sup, dep_bot, lon_e, lon_d, top_e, top_d, bot_e, bot_d, path, ticks = None):
+
+
+        # lon_e = lons[:6] # reanal_subset['longitude'].sel(longitude=slice(lons[0], lons[5]))
+        # lon_d = lons[5:] # reanal_subset['longitude'].sel(longitude=slice(lons[5], lons[9]))
+
+        print('comecando plot ')
+
+        vals_mean = np.array([abs(np.nanmax(mean_top)), abs(np.nanmax(mean_bot)),
+                            abs(np.nanmin(mean_top)), abs(np.nanmin(mean_bot))])
+        
+        vals_mean_max = np.round(np.max(vals_mean),2)
+
+        four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        lons[:m_lons+1], lons[m_lons:],
+                            mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/mean_u',
+                            np.arange(-vals_mean_max, vals_mean_max,round((vals_mean_max*2)/10,2)), cmap='bwr')
+        
+        four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        lons[:m_lons+1], lons[m_lons:],
+                            mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/mean_sem_lim_u', cmap='bwr')
+
+        # vals_var = np.array([abs(np.nanmax(var_top)), abs(np.nanmax(var_bot)),
+        #                     abs(np.nanmin(var_top)), abs(np.nanmin(var_bot))])
+        
+        # vals_var_max = np.round(np.max(vals_var),2)
+
+        # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+        #                 lons[:m_lons+1], lons[m_lons:],
+        #                 var_top_e, var_top_d, var_bot_e, var_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var',
+        #                 np.arange(0,vals_var_max, vals_var_max/10))
+
+        # vals_varf = np.array([abs(np.nanmax(varf_top)), abs(np.nanmax(varf_bot)),
+        #                     abs(np.nanmin(varf_top)), abs(np.nanmin(varf_bot))])
+        
+        # vals_varf_max = np.round(np.max(vals_varf),2)
+
+        # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+        #                 lons[:m_lons+1], lons[m_lons:],
+        #                 varf_top_e, varf_top_d, varf_bot_e, varf_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_filt',
+        #                 np.arange(0,vals_varf_max, vals_varf_max/10))
+
+        perc_top_e = (np.asarray(varf_top_e)/np.asarray(var_top_e)) * 100
+        perc_top_d = (np.asarray(varf_top_d)/np.asarray(var_top_d)) * 100
+        perc_bot_e = (np.asarray(varf_bot_e)/np.asarray(var_bot_e)) * 100
+        perc_bot_d = (np.asarray(varf_bot_d)/np.asarray(var_bot_d)) * 100
+
+        four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        lons[:m_lons+1], lons[m_lons:],
+                        perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_perc_u', np.arange(0,101,10))
+        
+        four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        lons[:m_lons+1], lons[m_lons:],
+                        perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_perc_sem_lim_u')
+
+        # dif_top_e = np.asarray(var_top_e) - np.asarray(varf_top_e)
+        # dif_top_d = np.asarray(var_top_d) - np.asarray(varf_top_d)
+        # dif_bot_e = np.asarray(var_bot_e) - np.asarray(varf_bot_e)
+        # dif_bot_d = np.asarray(var_bot_d) - np.asarray(varf_bot_d)
+
+        # vals_dif = np.array([abs(np.nanmax(dif_top_e)), abs(np.nanmax(dif_bot_e)), abs(np.nanmax(dif_top_d)), abs(np.nanmax(dif_bot_d)),
+        #                     abs(np.nanmin(dif_top_e)), abs(np.nanmin(dif_bot_e)), abs(np.nanmin(dif_top_d)), abs(np.nanmin(dif_bot_d))])
+        
+        # vals_dif_max = np.round(np.nanmax(vals_dif),2)
+        
+        # if np.isnan(np.nan):
+        #     vals_dif_max = .05
+
+        # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+        #                 lons[:m_lons+1], lons[m_lons:],
+        #                 dif_top_e, dif_top_d, dif_bot_e, dif_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_diff',
+        #                 np.arange(0,vals_dif_max,vals_dif_max/10))
+        
+    # fazendo pra media do tempo:
+    print('total')
+
+    mean_time_concat = xr.concat(mean_time, dim="year")
+    var_time_concat = xr.concat(var_time, dim="year")
+    varf_time_concat = xr.concat(varf_time, dim="year")
+
+    # Calcular a média ao longo dos anos
+    mean_time_avg = mean_time_concat.mean(dim="year")
+    var_time_avg = var_time_concat.mean(dim="year")
+    varf_time_avg = varf_time_concat.mean(dim="year")
+
+    # Selecionar a variável
+    mean_top= mean_time_avg.sel(depth=slice(0,200))
+    mean_bot= mean_time_avg.sel(depth=slice(200,999999))
+
+    var_top= var_time_avg.sel(depth=slice(0,200))
+    var_bot= var_time_avg.sel(depth=slice(200,999999))
+
+    varf_top = varf_time_avg.sel(depth=slice(0,200))
+    varf_bot = varf_time_avg.sel(depth=slice(200,999999))
+
+
+    mean_top_e = []
+    mean_top_d = []
+    mean_bot_e = []
+    mean_bot_d = []
+
+    var_top_e = []
+    var_top_d = []
+    var_bot_e = []
+    var_bot_d = []
+
+    varf_top_e = []
+    varf_top_d = []
+    varf_bot_e = []
+    varf_bot_d = []
+
+    
+    for lat, lon in zip(lats, lons):
+        m_lons = int(len(lons)/4) 
+        # filt.append(reanal_subset['along_shore_filt'].sel(latitude=lat, longitude=lon, time=time_selected, method='nearest'))
+        # raw.append(reanal_subset['along_shore'].sel(latitude=lat, longitude=lon,time=time_selected, method='nearest'))
+
+        if lon < lons[m_lons]:
+        # Extrair o perfil em profundidade para o par (lat, lon)
+            mean_top_e.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            mean_bot_e.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            var_top_e.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            var_bot_e.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            varf_top_e.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            varf_bot_e.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+        elif lon == lons[m_lons]:
+            mean_top_e.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            mean_bot_e.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            var_top_e.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            var_bot_e.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            varf_top_e.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            varf_bot_e.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+    
+            mean_top_d.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            mean_bot_d.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            var_top_d.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            var_bot_d.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            varf_top_d.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            varf_bot_d.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+        else:
+            mean_top_d.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            mean_bot_d.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            var_top_d.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            var_bot_d.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            varf_top_d.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            varf_bot_d.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+    output_dir = f'/home/bcabral/mestrado/fig/secmean/secao{s}/'
+    os.makedirs(output_dir + f'/curr_comp/{s}/total/mean', exist_ok=True)
+    # os.makedirs(output_dir + f'/var/{str(year)}', exist_ok=True)
+    # os.makedirs(output_dir + f'/varf/{str(year)}', exist_ok=True)
+
+
+    # def four_window_custom(dep_sup, dep_bot, lon_e, lon_d, top_e, top_d, bot_e, bot_d, path, ticks = None):
+
+
+    # lon_e = lons[:6] # reanal_subset['longitude'].sel(longitude=slice(lons[0], lons[5]))
+    # lon_d = lons[5:] # reanal_subset['longitude'].sel(longitude=slice(lons[5], lons[9]))
+
+
+    vals_mean = np.array([abs(np.nanmax(mean_top)), abs(np.nanmax(mean_bot)),
+                        abs(np.nanmin(mean_top)), abs(np.nanmin(mean_bot))])
+    
+    vals_mean_max = np.round(np.max(vals_mean),2)
+
+    four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    lons[:m_lons+1], lons[m_lons:],
+                        mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/total/mean_u',
+                        np.arange(-vals_mean_max, vals_mean_max,round((vals_mean_max*2)/10,2)), cmap='bwr')
+
+
+    four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    lons[:m_lons+1], lons[m_lons:],
+                        mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/total/mean_sem_lim_u', cmap='bwr')
+    # vals_var = np.array([abs(np.nanmax(var_top)), abs(np.nanmax(var_bot)),
+    #                     abs(np.nanmin(var_top)), abs(np.nanmin(var_bot))])
+    
+    # vals_var_max = np.round(np.max(vals_var),2)
+
+    # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+    #                 lons[:m_lons+1], lons[m_lons:],
+    #                 var_top_e, var_top_d, var_bot_e, var_bot_d, output_dir+f'/curr_comp/{s}/total/var',
+    #                 np.arange(0,vals_var_max, vals_var_max/10))
+
+    # vals_varf = np.array([abs(np.nanmax(varf_top)), abs(np.nanmax(varf_bot)),
+    #                     abs(np.nanmin(varf_top)), abs(np.nanmin(varf_bot))])
+    
+    # vals_varf_max = np.round(np.max(vals_varf),2)
+
+    # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+    #                 lons[:m_lons+1], lons[m_lons:],
+    #                 varf_top_e, varf_top_d, varf_bot_e, varf_bot_d, output_dir+f'/curr_comp/{s}/total/var_filt',
+    #                 np.arange(0,vals_varf_max, vals_varf_max/10))
+
+    perc_top_e = (np.asarray(varf_top_e)/np.asarray(var_top_e)) * 100
+    perc_top_d = (np.asarray(varf_top_d)/np.asarray(var_top_d)) * 100
+    perc_bot_e = (np.asarray(varf_bot_e)/np.asarray(var_bot_e)) * 100
+    perc_bot_d = (np.asarray(varf_bot_d)/np.asarray(var_bot_d)) * 100
+
+    four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    lons[:m_lons+1], lons[m_lons:],
+                    perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/total/var_perc_u', np.arange(0,101,10))
+    
+    four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    lons[:m_lons+1], lons[m_lons:],
+                    perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/total/var_perc_u')
+
+    # dif_top_e = np.asarray(var_top_e) - np.asarray(varf_top_e)
+    # dif_top_d = np.asarray(var_top_d) - np.asarray(varf_top_d)
+    # dif_bot_e = np.asarray(var_bot_e) - np.asarray(varf_bot_e)
+    # dif_bot_d = np.asarray(var_bot_d) - np.asarray(varf_bot_d)
+
+    # vals_dif = np.array([abs(np.nanmax(dif_top_e)), abs(np.nanmax(dif_bot_e)), abs(np.nanmax(dif_top_d)), abs(np.nanmax(dif_bot_d)),
+    #                     abs(np.nanmin(dif_top_e)), abs(np.nanmin(dif_bot_e)), abs(np.nanmin(dif_top_d)), abs(np.nanmin(dif_bot_d))])
+    
+    # vals_dif_max = np.round(np.nanmax(vals_dif),2)
+
+    # if np.isnan(np.nan):
+    #     vals_dif_max = .05
+        
+    # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+    #                 lons[:m_lons+1], lons[m_lons:],
+    #                 dif_top_e, dif_top_d, dif_bot_e, dif_bot_d, output_dir+f'/curr_comp/{s}/total/var_diff',
+    #                 np.arange(0,vals_dif_max,vals_dif_max/10))
+
+
+####564654984651784653198432189415
+
+s = 0
+for section in sections:
+    s+=1
+    print(f'Iniciando seção {s}')
+    mean_time = []
+    var_time = []
+    varf_time = []
+    for year in years:
+        reanal = {}
+        print('comecando ' + str(year))
+
+        reanal[year] = set_reanalisys_curr_dims(xr.open_mfdataset(model_path + model + '/UV/' + str(year)  + '/*.nc')
+                                            , model)
+
+        reanalisys = xr.concat(list(reanal.values()), dim="time")
+        # year = 'total'
+        # define a linha que eu vou plotar
+
+        delta_lon = section['lon'].values[-1] - section['lon'].values[0]
+        delta_lat = section['lat'].values[-1] - section['lat'].values[0]
+        theta_rad = np.arctan2(delta_lat, delta_lon) + np.pi/2# Ângulo em radianos
+        theta_deg = np.degrees(theta_rad)  # Convertendo para graus
+
+
+        lat_i = section['lat'].min() - 0.3
+        lat_f = section['lat'].max() + 0.3
+        lon_i = section['lon'].min() - 0.3
+        lon_f = section['lon'].max() + 0.3
+
+        # preciso pegar agora o quadrilatero em torno da linha pra fazer a interpolacao
+        reanal_subset = reanalisys.where((reanalisys.latitude < lat_f) & 
+                                    (reanalisys.longitude < lon_f) &
+                                    (reanalisys.latitude > lat_i) & 
+                                    (reanalisys.longitude > lon_i) ,
+                                    drop=True)
+
+        # rotacionar direto o reanal_subset pode ser mais facil
+
+
+
+        # Aplicar a rotação a cada ponto de grade
+        reanal_subset = reanal_subset.chunk(dict(time=-1))
+
+        # along_shore, cross_shore = xr.apply_ufunc(
+        #     rotate_current,
+        #     reanal_subset['u'],  # Entrada U
+        #     reanal_subset['v'],  # Entrada V
+        #     theta_deg,           # Ângulo como escalar
+        #     input_core_dims=[["time"], ["time"], []],  # Dimensão relevante é apenas o tempo
+        #     output_core_dims=[["time"], ["time"]],    # Saídas têm apenas dimensão de tempo
+        #     vectorize=True,  # Permite a aplicação para todas as grades
+        #     dask="parallelized",  # Habilita o processamento paralelo
+        #     output_dtypes=[reanal_subset['u'].dtype, reanal_subset['v'].dtype]
+        # )
+
+        # # Adicionar as componentes rotacionadas ao Dataset
+        # along_shore = along_shore.chunk({'depth': 17, 'latitude': 28, 'longitude': 45, 'time': 30})
+        # print('comecou a computar os dados along_shore')
+        # along_shore = along_shore.compute()
+        # print('terminou')
+        # reanal_subset['along_shore'] =  cross_shore.transpose("time", "depth", "latitude", "longitude")
+        # reanal_subset['cross_shore'] = cross_shore
+
+        # # fazendo a mesma coisa para filtrado:
+
+        reanal_subset['along_shore_filt'] = model_filt.filtra_reanalise_v(reanal_subset)
+
+
+        # pegar a variância e a média do along_shore
+        mean_along = reanal_subset['v'].mean(dim='time')
+        var_along = reanal_subset['v'].var(dim='time')
+
+        # pegar a variância do along_shore_filt
+        var_alongf = reanal_subset['along_shore_filt'].var(dim='time')
+
+        lats = section['lat'].values
+        lons = section['lon'].values
+
+        mean_time.append(mean_along)
+        var_time.append(var_along)
+        varf_time.append(var_alongf)
+
+
+
+
+        # Selecionar a variável
+        mean_top= mean_along.sel(depth=slice(0,200))
+        mean_bot= mean_along.sel(depth=slice(200,999999))
+
+        var_top= var_along.sel(depth=slice(0,200))
+        var_bot= var_along.sel(depth=slice(200,999999))
+
+        varf_top = var_alongf.sel(depth=slice(0,200))
+        varf_bot = var_alongf.sel(depth=slice(200,999999))
+
+
+        mean_top_e = []
+        mean_top_d = []
+        mean_bot_e = []
+        mean_bot_d = []
+
+        var_top_e = []
+        var_top_d = []
+        var_bot_e = []
+        var_bot_d = []
+
+        varf_top_e = []
+        varf_top_d = []
+        varf_bot_e = []
+        varf_bot_d = []
+
+        
+        for lat, lon in zip(lats, lons):
+            m_lons = int(len(lons)/4) 
+            # filt.append(reanal_subset['along_shore_filt'].sel(latitude=lat, longitude=lon, time=time_selected, method='nearest'))
+            # raw.append(reanal_subset['along_shore'].sel(latitude=lat, longitude=lon,time=time_selected, method='nearest'))
+
+            if lon < lons[m_lons]:
+            # Extrair o perfil em profundidade para o par (lat, lon)
+                mean_top_e.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                mean_bot_e.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                var_top_e.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                var_bot_e.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                varf_top_e.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                varf_bot_e.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            elif lon == lons[m_lons]:
+                mean_top_e.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                mean_bot_e.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                var_top_e.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                var_bot_e.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                varf_top_e.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                varf_bot_e.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+        
+                mean_top_d.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                mean_bot_d.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                var_top_d.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                var_bot_d.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                varf_top_d.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                varf_bot_d.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            else:
+                mean_top_d.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                mean_bot_d.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                var_top_d.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                var_bot_d.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+                varf_top_d.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+                varf_bot_d.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+        output_dir = f'/home/bcabral/mestrado/fig/secmean/secao{s}/'
+        os.makedirs(output_dir + f'/curr_comp/{s}/{year}/mean', exist_ok=True)
+        # os.makedirs(output_dir + f'/var/{str(year)}', exist_ok=True)
+        # os.makedirs(output_dir + f'/varf/{str(year)}', exist_ok=True)
+
+
+        # def four_window_custom(dep_sup, dep_bot, lon_e, lon_d, top_e, top_d, bot_e, bot_d, path, ticks = None):
+
+
+        # lon_e = lons[:6] # reanal_subset['longitude'].sel(longitude=slice(lons[0], lons[5]))
+        # lon_d = lons[5:] # reanal_subset['longitude'].sel(longitude=slice(lons[5], lons[9]))
+
+        print('comecando plot ')
+
+        vals_mean = np.array([abs(np.nanmax(mean_top)), abs(np.nanmax(mean_bot)),
+                            abs(np.nanmin(mean_top)), abs(np.nanmin(mean_bot))])
+        
+        vals_mean_max = np.round(np.max(vals_mean),2)
+
+        four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        lons[:m_lons+1], lons[m_lons:],
+                            mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/mean_v',
+                            np.arange(-vals_mean_max, vals_mean_max,round((vals_mean_max*2)/10,2)), cmap='bwr')
+        
+        four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        lons[:m_lons+1], lons[m_lons:],
+                            mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/mean_sem_lim_v', cmap='bwr')
+
+        # vals_var = np.array([abs(np.nanmax(var_top)), abs(np.nanmax(var_bot)),
+        #                     abs(np.nanmin(var_top)), abs(np.nanmin(var_bot))])
+        
+        # vals_var_max = np.round(np.max(vals_var),2)
+
+        # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+        #                 lons[:m_lons+1], lons[m_lons:],
+        #                 var_top_e, var_top_d, var_bot_e, var_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var',
+        #                 np.arange(0,vals_var_max, vals_var_max/10))
+
+        # vals_varf = np.array([abs(np.nanmax(varf_top)), abs(np.nanmax(varf_bot)),
+        #                     abs(np.nanmin(varf_top)), abs(np.nanmin(varf_bot))])
+        
+        # vals_varf_max = np.round(np.max(vals_varf),2)
+
+        # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+        #                 lons[:m_lons+1], lons[m_lons:],
+        #                 varf_top_e, varf_top_d, varf_bot_e, varf_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_filt',
+        #                 np.arange(0,vals_varf_max, vals_varf_max/10))
+
+        perc_top_e = (np.asarray(varf_top_e)/np.asarray(var_top_e)) * 100
+        perc_top_d = (np.asarray(varf_top_d)/np.asarray(var_top_d)) * 100
+        perc_bot_e = (np.asarray(varf_bot_e)/np.asarray(var_bot_e)) * 100
+        perc_bot_d = (np.asarray(varf_bot_d)/np.asarray(var_bot_d)) * 100
+
+        four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        lons[:m_lons+1], lons[m_lons:],
+                        perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_perc_v', np.arange(0,101,10))
+        
+        four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        lons[:m_lons+1], lons[m_lons:],
+                        perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_perc_sem_lim_v')
+
+        # dif_top_e = np.asarray(var_top_e) - np.asarray(varf_top_e)
+        # dif_top_d = np.asarray(var_top_d) - np.asarray(varf_top_d)
+        # dif_bot_e = np.asarray(var_bot_e) - np.asarray(varf_bot_e)
+        # dif_bot_d = np.asarray(var_bot_d) - np.asarray(varf_bot_d)
+
+        # vals_dif = np.array([abs(np.nanmax(dif_top_e)), abs(np.nanmax(dif_bot_e)), abs(np.nanmax(dif_top_d)), abs(np.nanmax(dif_bot_d)),
+        #                     abs(np.nanmin(dif_top_e)), abs(np.nanmin(dif_bot_e)), abs(np.nanmin(dif_top_d)), abs(np.nanmin(dif_bot_d))])
+        
+        # vals_dif_max = np.round(np.nanmax(vals_dif),2)
+        
+        # if np.isnan(np.nan):
+        #     vals_dif_max = .05
+
+        # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+        #                 lons[:m_lons+1], lons[m_lons:],
+        #                 dif_top_e, dif_top_d, dif_bot_e, dif_bot_d, output_dir+f'/curr_comp/{s}/{str(year)}/var_diff',
+        #                 np.arange(0,vals_dif_max,vals_dif_max/10))
+        
+    # fazendo pra media do tempo:
+    print('total')
+
+    mean_time_concat = xr.concat(mean_time, dim="year")
+    var_time_concat = xr.concat(var_time, dim="year")
+    varf_time_concat = xr.concat(varf_time, dim="year")
+
+    # Calcular a média ao longo dos anos
+    mean_time_avg = mean_time_concat.mean(dim="year")
+    var_time_avg = var_time_concat.mean(dim="year")
+    varf_time_avg = varf_time_concat.mean(dim="year")
+
+    # Selecionar a variável
+    mean_top= mean_time_avg.sel(depth=slice(0,200))
+    mean_bot= mean_time_avg.sel(depth=slice(200,999999))
+
+    var_top= var_time_avg.sel(depth=slice(0,200))
+    var_bot= var_time_avg.sel(depth=slice(200,999999))
+
+    varf_top = varf_time_avg.sel(depth=slice(0,200))
+    varf_bot = varf_time_avg.sel(depth=slice(200,999999))
+
+
+    mean_top_e = []
+    mean_top_d = []
+    mean_bot_e = []
+    mean_bot_d = []
+
+    var_top_e = []
+    var_top_d = []
+    var_bot_e = []
+    var_bot_d = []
+
+    varf_top_e = []
+    varf_top_d = []
+    varf_bot_e = []
+    varf_bot_d = []
+
+    
+    for lat, lon in zip(lats, lons):
+        m_lons = int(len(lons)/4) 
+        # filt.append(reanal_subset['along_shore_filt'].sel(latitude=lat, longitude=lon, time=time_selected, method='nearest'))
+        # raw.append(reanal_subset['along_shore'].sel(latitude=lat, longitude=lon,time=time_selected, method='nearest'))
+
+        if lon < lons[m_lons]:
+        # Extrair o perfil em profundidade para o par (lat, lon)
+            mean_top_e.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            mean_bot_e.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            var_top_e.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            var_bot_e.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            varf_top_e.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            varf_bot_e.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+        elif lon == lons[m_lons]:
+            mean_top_e.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            mean_bot_e.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            var_top_e.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            var_bot_e.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            varf_top_e.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            varf_bot_e.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+    
+            mean_top_d.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            mean_bot_d.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            var_top_d.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            var_bot_d.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            varf_top_d.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            varf_bot_d.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+        else:
+            mean_top_d.append(mean_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            mean_bot_d.append(mean_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            var_top_d.append(var_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            var_bot_d.append(var_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+            varf_top_d.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
+            varf_bot_d.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
+
+    output_dir = f'/home/bcabral/mestrado/fig/secmean/secao{s}/'
+    os.makedirs(output_dir + f'/curr_comp/{s}/total/mean', exist_ok=True)
+    # os.makedirs(output_dir + f'/var/{str(year)}', exist_ok=True)
+    # os.makedirs(output_dir + f'/varf/{str(year)}', exist_ok=True)
+
+
+    # def four_window_custom(dep_sup, dep_bot, lon_e, lon_d, top_e, top_d, bot_e, bot_d, path, ticks = None):
+
+
+    # lon_e = lons[:6] # reanal_subset['longitude'].sel(longitude=slice(lons[0], lons[5]))
+    # lon_d = lons[5:] # reanal_subset['longitude'].sel(longitude=slice(lons[5], lons[9]))
+
+
+    vals_mean = np.array([abs(np.nanmax(mean_top)), abs(np.nanmax(mean_bot)),
+                        abs(np.nanmin(mean_top)), abs(np.nanmin(mean_bot))])
+    
+    vals_mean_max = np.round(np.max(vals_mean),2)
+
+    four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    lons[:m_lons+1], lons[m_lons:],
+                        mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/total/mean_v',
+                        np.arange(-vals_mean_max, vals_mean_max,round((vals_mean_max*2)/10,2)), cmap='bwr')
+
+
+    four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    lons[:m_lons+1], lons[m_lons:],
+                        mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir+f'/curr_comp/{s}/total/mean_sem_lim_v', cmap='bwr')
+    # vals_var = np.array([abs(np.nanmax(var_top)), abs(np.nanmax(var_bot)),
+    #                     abs(np.nanmin(var_top)), abs(np.nanmin(var_bot))])
+    
+    # vals_var_max = np.round(np.max(vals_var),2)
+
+    # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+    #                 lons[:m_lons+1], lons[m_lons:],
+    #                 var_top_e, var_top_d, var_bot_e, var_bot_d, output_dir+f'/curr_comp/{s}/total/var',
+    #                 np.arange(0,vals_var_max, vals_var_max/10))
+
+    # vals_varf = np.array([abs(np.nanmax(varf_top)), abs(np.nanmax(varf_bot)),
+    #                     abs(np.nanmin(varf_top)), abs(np.nanmin(varf_bot))])
+    
+    # vals_varf_max = np.round(np.max(vals_varf),2)
+
+    # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+    #                 lons[:m_lons+1], lons[m_lons:],
+    #                 varf_top_e, varf_top_d, varf_bot_e, varf_bot_d, output_dir+f'/curr_comp/{s}/total/var_filt',
+    #                 np.arange(0,vals_varf_max, vals_varf_max/10))
+
+    perc_top_e = (np.asarray(varf_top_e)/np.asarray(var_top_e)) * 100
+    perc_top_d = (np.asarray(varf_top_d)/np.asarray(var_top_d)) * 100
+    perc_bot_e = (np.asarray(varf_bot_e)/np.asarray(var_bot_e)) * 100
+    perc_bot_d = (np.asarray(varf_bot_d)/np.asarray(var_bot_d)) * 100
+
+    four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    lons[:m_lons+1], lons[m_lons:],
+                    perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/total/var_perc_v', np.arange(0,101,10))
+    
+    four_window_custom_sem_lim(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    lons[:m_lons+1], lons[m_lons:],
+                    perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir+f'/curr_comp/{s}/total/var_perc_v')
+
+    # dif_top_e = np.asarray(var_top_e) - np.asarray(varf_top_e)
+    # dif_top_d = np.asarray(var_top_d) - np.asarray(varf_top_d)
+    # dif_bot_e = np.asarray(var_bot_e) - np.asarray(varf_bot_e)
+    # dif_bot_d = np.asarray(var_bot_d) - np.asarray(varf_bot_d)
+
+    # vals_dif = np.array([abs(np.nanmax(dif_top_e)), abs(np.nanmax(dif_bot_e)), abs(np.nanmax(dif_top_d)), abs(np.nanmax(dif_bot_d)),
+    #                     abs(np.nanmin(dif_top_e)), abs(np.nanmin(dif_bot_e)), abs(np.nanmin(dif_top_d)), abs(np.nanmin(dif_bot_d))])
+    
+    # vals_dif_max = np.round(np.nanmax(vals_dif),2)
+
+    # if np.isnan(np.nan):
+    #     vals_dif_max = .05
+        
+    # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+    #                 lons[:m_lons+1], lons[m_lons:],
+    #                 dif_top_e, dif_top_d, dif_bot_e, dif_bot_d, output_dir+f'/curr_comp/{s}/total/var_diff',
+    #                 np.arange(0,vals_dif_max,vals_dif_max/10))
+
+
+
+
+ ##################################################
+  ##################################################
+   ##################################################
+    ##################################################
+     ##################################################
+      ##################################################
+       ##################################################
+        ##################################################
+         ##################################################
+          ##################################################
+           ##################################################
+            ##################################################
+
+
+print('kept you waiting, huh?')
+
 
 
 
