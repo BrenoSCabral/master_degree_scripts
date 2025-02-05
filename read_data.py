@@ -219,6 +219,11 @@ def read_simcosta(name):
 
     return df
 
+# usados =  ['BARRA DE PARANAGUÁ - CANAL DA GALHETAm', 'Fortaleza.csvg1', 'ilha_fiscal.csvg1',
+#            'imbituba.csvg2', 'macae.csvg2', 'NOVA DEL DA CAP DOS PORTOS EM ITAJAÍ m',
+#            'PORTO DE MUCURIPEm', 'PORTO DE PARANAGUÁ - CAIS OESTEm', 'PORTO DO FORNOm',
+#            'rio_grande.csvg2', 'Salvador_2004_2015.csvg1', 'TEPORTIm', 'TERMINAL PORTUÁRIO DA PONTA DO FÉLIXm',
+#            'TIPLAMm', 'ubatuba.csvg2'] 
 
 def plota_pontos(pts, namefile):
     coord = ccrs.PlateCarree()
@@ -231,6 +236,11 @@ def plota_pontos(pts, namefile):
     ax.add_feature(cfeature.BORDERS, zorder=10)
     ax.add_feature(cfeature.COASTLINE, zorder=10)
     ax.set_extent([-60, -30, 5, -40], crs=ccrs.PlateCarree())
+
+    for point in pts:
+        if point[4] in usados:
+            plt.plot(point[1], point[0], color='darkorange', marker='s',
+                 linewidth=2, transform=ccrs.PlateCarree(), markersize=8)
 
     for point in pts:
         marker = 'P'
@@ -262,19 +272,23 @@ def plota_pontos(pts, namefile):
 
     legend_elements = [
         Line2D([0],[0], color = 'royalblue', label='SiMCosta', marker ='P', markerfacecolor='royalblue',
-               markersize=15, linestyle='None'),
+               markersize=12, linestyle='None'),
         Line2D([0],[0], color = 'lime', label='Marinha', marker ='P', markerfacecolor='lime',
-               markersize=15, linestyle='None'),
+               markersize=12, linestyle='None'),
         Line2D([0],[0], color = 'yellow', label='GOOS', marker ='P', markerfacecolor='yellow',
-               markersize=15, linestyle='None'),
+               markersize=12, linestyle='None'),
         Line2D([0],[0], color = 'r', label='GLOSS', marker ='o', markerfacecolor='r',
-               markersize=15, linestyle='None')                
+               markersize=12, linestyle='None')   ,
+        Line2D([0],[0], color = 'darkorange', label='Utilizado', marker ='s', markerfacecolor='darkorange',
+               markersize=12, linestyle='None')              
     ]
 
     ax.legend(handles = legend_elements, loc='lower right')
 
     plt.tight_layout()
-    plt.savefig(f'/Users/breno/Documents/Mestrado/dados/estudo/pontos_{namefile}.png')
+    # plt.show()
+    plt.savefig('/Users/breno/mestrado/pontos_usados_mapa.png')
+    # plt.savefig(f'/Users/breno/Documents/Mestrado/dados/estudo/pontos_{namefile}.png')
 
 
 def plota_series(series):
@@ -632,7 +646,7 @@ def make_histogram(infos):
     total_dias = []
     for info in infos:
         # tem que reamostrar pra dias aqui!!!!
-        dias = pd.date_range(info[-1][0], info[-1][-1], freq='1D')
+        dias = pd.date_range(info[-2][0], info[-2][-1], freq='1D')
         total_dias.append(len(dias))
         # total_dias.append(len(info[-1]))
     arr_dias = np.asarray(total_dias)
@@ -712,8 +726,67 @@ def make_histogram(infos):
 
     plt.show()
 
+    # log try
+
+    # Supondo que 'hist_dias' já esteja definido
+
+    plt.bar(['<15', '15 - 30', '30 - 60', '60 - 180', '180 - 365', '>=365'], hist_dias)
+    plt.title('Tamanho das séries contínuas')
+    plt.xlabel('Número de Dias')
+    plt.ylabel('Quantidade de séries')
+
+    # Definindo o eixo y em escala logarítmica
+    plt.yscale('log')
+    plt.ylim(bottom=1)
+    plt.grid()
+
+    # Exibindo a grade e o gráfico
+    # plt.grid(True, which='both', axis='y')  # Exibe a grade também na escala logarítmica
+    plt.show()
+
+
+    ### histograma deitado
+
+
+    plt.figure(figsize=(10,5))
+    # Usando plt.barh para criar um histograma horizontal
+    cores = ['dimgray' if label == '>=365' else 'silver' for label in ['<15', '15 - 30', '30 - 60', '60 - 180', '180 - 365', '>=365']]
+    
+    bars = plt.barh(['< 15', '15 - 30', '30 - 60', '60 - 180', '180 - 365', '\u2265 365'], hist_dias, color=cores)
+    plt.title('Tamanho das séries contínuas')
+    plt.xlabel('Quantidade de séries')  # O eixo x agora representa a quantidade
+    plt.ylabel('Número de dias')  # O eixo y agora representa os intervalos de dias
+
+    for bar in bars:
+        width = bar.get_width()  # Largura da barra
+        height = bar.get_height()  # Altura da barra (não usada para o texto)
+        y_position = bar.get_y() + height / 2  # Posição vertical central da barra
+        
+        # Formatar o valor com separador de milhar como ponto
+        value_text = f'{width:,.0f}'.replace(',', '.')  # Troca vírgula por ponto
+        
+        # Adiciona o texto ao final da barra (mas ainda dentro dela)
+        # O texto é posicionado um pouco antes do final da barra (width - 0.05)
+        plt.text(width - width//25 - 1.05, y_position, value_text, va='center', ha='right', fontsize=8, color='white')
+
+
+
+    # Definindo o eixo x em escala logarítmica
+    plt.xscale('log')
+
+    # Ajustando o limite inferior do eixo x para 1 (já que não podemos ter log(0))
+    plt.xlim(left=1)
+
+    # Exibindo a grade e o gráfico
+    # plt.show()
+    plt.savefig('/Users/breno/mestrado/tam_series.png', dpi=500)
+
+
+
+
 
 def example_main():
+    # path_data = '/Users/breno/Documents/Mestrado/resultados/data'
     treated = all_series()
     series = {}
     for serie in treated:
