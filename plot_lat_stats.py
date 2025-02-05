@@ -77,41 +77,42 @@ for model in models:
 
 # Fazer o plot
 
-fig, axes = plt.subplots(1,3, figsize=(15, 10))
+# fig, axes = plt.subplots(1,3, figsize=(15, 10))
 
-for model in models:
-    lats = list(ss1[model].keys())
-    values1 = list(ss1[model].values())
-    values2 = list(ss2[model].values())
-    values3 = list(ss3[model].values())
+# for model in models:
+#     lats = list(ss1[model].keys())
+#     values1 = list(ss1[model].values())
+#     values2 = list(ss2[model].values())
+#     values3 = list(ss3[model].values())
 
-    if model == 'HYCOM':
-        model = 'GOFS'
+#     if model == 'HYCOM':
+#         model = 'GOFS'
 
-    axes[0].plot(values1, lats, label=model, marker='o', linestyle='')
-    axes[0].set_xlim(0,1)
-    axes[0].set_ylim(-35,-20)
-    axes[0].set_title('skill 1')
-
-
-    axes[1].plot(values2, lats, marker='o', linestyle='')
-    axes[1].set_xlim(0,1)
-    axes[1].set_ylim(-35,-20)
-    axes[1].set_title('skill 2')
+#     axes[0].plot(values1, lats, label=model, marker='o', linestyle='')
+#     axes[0].set_xlim(0,1)
+#     axes[0].set_ylim(-35,-20)
+#     axes[0].set_title('skill 1')
 
 
-    axes[2].plot(values3, lats, marker='o', linestyle='')
-    axes[2].set_xlim(0,1)
-    axes[2].set_ylim(-35,-20)
-    axes[2].set_title('skill 3')
+#     axes[1].plot(values2, lats, marker='o', linestyle='')
+#     axes[1].set_xlim(0,1)
+#     axes[1].set_ylim(-35,-20)
+#     axes[1].set_title('skill 2')
 
 
-fig.legend(models, loc='upper center', ncol=len(models))
+#     axes[2].plot(values3, lats, marker='o', linestyle='')
+#     axes[2].set_xlim(0,1)
+#     axes[2].set_ylim(-35,-20)
+#     axes[2].set_title('skill 3')
 
-plt.tight_layout()
-path = '/Users/breno/mestrado/lat_skills_s20.png'
-plt.savefig(path)
 
+# fig.legend(models, loc='upper center', ncol=len(models))
+
+# plt.tight_layout()
+# path = '/Users/breno/mestrado/lat_skills_s20.png'
+# plt.savefig(path)
+
+models = ['BRAN', 'CGLO', 'FOAM', 'GLOR4', 'GLOR12', 'HYCOM', 'ORAS']
 
 
 fig, axes = plt.subplots(1,1, figsize=(5, 10))
@@ -149,3 +150,135 @@ fig.legend(models)
 plt.tight_layout()
 path = '/Users/breno/mestrado/lat_skills2.png'
 plt.savefig(path)
+
+
+#######
+
+models = ['BRAN', 'CGLO', 'FOAM', 'GLOR4', 'GLOR12', 'HYCOM', 'ORAS']
+
+fig, axes = plt.subplots(2, 1, figsize=(5, 10))  # 2 linhas, 1 coluna
+
+# Primeiro subplot (latitudes até -20)
+for model in models:
+    lats = list(ss1[model].keys())
+    values1 = list(ss1[model].values())
+    values2 = list(ss2[model].values())
+    values3 = list(ss3[model].values())
+
+    if model == 'HYCOM':
+        model = 'GOFS'
+
+    axes[1].plot(values2, lats, label=model, marker='o', linestyle='')
+    axes[1].set_xlim(0, 1)
+    axes[1].set_ylim(-35, -20)  # Limite do eixo y para o primeiro subplot
+    axes[1].set_xlabel('Skill')
+    axes[1].set_ylabel('Latitude')
+
+# Segundo subplot (latitudes a partir de -5)
+for model in models:
+    lats = list(ss1[model].keys())
+    values1 = list(ss1[model].values())
+    values2 = list(ss2[model].values())
+    values3 = list(ss3[model].values())
+
+    if model == 'HYCOM':
+        model = 'GOFS'
+
+    axes[0].plot(values2, lats, label=model, marker='o', linestyle='')
+    axes[0].set_xlim(0, 1)
+    axes[0].set_ylim(-5, 0)  # Limite do eixo y para o segundo subplot
+    axes[0].set_ylabel('Latitude')
+
+models = ['BRAN', 'CGLO', 'FOAM', 'GLOR4', 'GLOR12', 'GOFS', 'ORAS']
+
+
+# Adicionando a legenda
+fig.legend(models, loc='upper right')
+
+# Ajustando o layout
+plt.tight_layout()
+
+# Exibindo a figura
+plt.show()
+
+
+##############
+
+models = ['BRAN', 'CGLO', 'FOAM', 'GLOR4', 'GLOR12', 'HYCOM', 'ORAS']
+
+# Criando a figura com dois subplots e definindo a proporção de altura
+fig, axes = plt.subplots(2, 1, figsize=(5, 10), gridspec_kw={'height_ratios': [1, 8]})  # 2 linhas, 1 coluna
+
+# Primeiro subplot (latitudes de -5 a -3)
+for model in models:
+    lats = np.asarray(list(ss1[model].keys()))
+    values2 = np.asarray(list(ss2[model].values()))
+
+    lats = lats[values2 > 0.001]
+    values2 = values2[values2 > 0.001]
+
+    if model == 'HYCOM':
+        model = 'GOFS'
+
+    axes[0].plot(values2, lats, label=model, marker='o', linestyle='')
+    axes[0].set_xlim(0, 1)
+    axes[0].set_ylim(-5, -3)  # Limite do eixo y para o primeiro subplot
+    axes[0].set_xticks([])
+    # axes[0].set_ylabel('Latitude')
+
+# Segundo subplot (latitudes de -35 a -20)
+for model in models:
+    lats = np.asarray(list(ss1[model].keys()))
+    values2 = np.asarray(list(ss2[model].values()))
+
+    lats = lats[values2 > 0.001]
+    values2 = values2[values2 > 0.001]
+
+    if model == 'HYCOM':
+        model = 'GOFS'
+
+    axes[1].plot(values2, lats, label=model, marker='o', linestyle='')
+    axes[1].set_xlim(0, 1)
+    axes[1].set_ylim(-35, -20)  # Limite do eixo y para o segundo subplot
+    axes[1].set_xlabel('Skill')
+    axes[1].set_ylabel('Latitude')
+
+
+
+# Adicionando a legenda
+models = ['BRAN', 'CGLO', 'FOAM', 'GLOR4', 'GLOR12', 'GOFS', 'ORAS']
+fig.legend(models)
+
+# Ajustando o layout para aproximar os subplots
+plt.subplots_adjust(hspace=0.1)  # Espaçamento vertical entre os subplots
+
+# Exibindo a figura
+path = '/Users/breno/mestrado/lat_skills_t_dropna.png'
+plt.tight_layout()
+plt.savefig(path)
+
+
+###############
+
+# fazendo uma média de skill por latitude:
+
+lats = np.asarray(list(ss1['BRAN'].keys()))
+
+lat_mean = {}
+for lat in lats:
+    mean_lat = []
+    for model in models:
+        mean_lat.append(ss2[model][lat])
+    mean = np.asarray(mean_lat).mean()
+    lat_mean[lat] = mean
+
+
+plt.plot(list(lat_mean.values()), list(lat_mean.keys()))
+
+
+# skill medio por modelo:
+
+for model in models:
+    print(model)
+    print(np.nanmean(np.asarray(list(ss2[model].values()))))
+    print('------------------------------')
