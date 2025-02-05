@@ -179,7 +179,7 @@ def plot_line(lines_plot):
 
     # Adicionar linha conectando os pontos
     for line in lines_plot:
-        plt.plot(line['lon'], line['lat'], color='blue', linestyle='-', transform=ccrs.PlateCarree())
+        plt.plot(line['lon'], line['lat'], color='red', linestyle='--', transform=ccrs.PlateCarree())
         
         # Adicionar pontos nos extremos
         start = line.iloc[0]
@@ -188,13 +188,13 @@ def plot_line(lines_plot):
         plt.plot(end['lon'], end['lat'], color='red', linewidth=2, marker='*', transform=ccrs.PlateCarree())
         
 
-        point = line.iloc[len(line)//2]
+        # point = line.iloc[len(line)//2]
 
 
-        lon_p, lat_p = point['lon'], point['lat']
-        angle = np.degrees(np.arctan2(end[1] - start[1], end[0] - start[0]))
-        perp_line = perpendicular_line(lon_p, lat_p, angle - 90, length=2)
-        plt.plot([perp_line[0][0], perp_line[1][0]], [perp_line[0][1], perp_line[1][1]], color='red', linestyle='--', transform=ccrs.PlateCarree())
+        # lon_p, lat_p = point['lon'], point['lat']
+        # angle = np.degrees(np.arctan2(end[1] - start[1], end[0] - start[0]))
+        # perp_line = perpendicular_line(lon_p, lat_p, angle - 90, length=2)
+        # plt.plot([perp_line[0][0], perp_line[1][0]], [perp_line[0][1], perp_line[1][1]], color='red', linestyle='--', transform=ccrs.PlateCarree())
 
 
     # # Ajustar os limites do mapa
@@ -214,7 +214,7 @@ def plot_line(lines_plot):
     gl.xformatter = LONGITUDE_FORMATTER
     gl.yformatter = LATITUDE_FORMATTER
     # plt.show()
-    plt.savefig('/Users/breno/mestrado/linhas_longshore')
+    plt.savefig('/Users/breno/mestrado/linhas_longshore_adj.png')
 
 
 def interpolate_points(start, end, num_points):
@@ -345,5 +345,5 @@ for i in range(len(pts_cross)):
     cross_line = interpolate_points(start, end, 10)
 
     lines_plot.append(cross_line)
-plot_line(lines_plot)
+plot_line(secs)
 print(pts_cross)
