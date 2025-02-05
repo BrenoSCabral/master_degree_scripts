@@ -16,15 +16,7 @@ import cartopy.feature as cfeature
 import matplotlib.ticker as mticker
 
 # my files
-from read_data import read_exported_series, treat_exported_series, all_series, sep_series
-from model_data import get_model_region, get_correlation
-from read_reanalisys import set_reanalisys_dims
-import filtro
-sys.path.append(
-    'old'
-)
-import stats
-import general_plots as gplots
+
 
 import matplotlib
 matplotlib.use('TkAgg')
@@ -38,25 +30,25 @@ fig_folder = '/home/bcabral/mestrado/fig/isobaths_50/'
 
 
 
-def get_reanalisys(lat, lon, model, di, df):
-    reanal = {}
-    years = list(set([di.year, df.year]))
-    for year in years:
-        reanal[year] = set_reanalisys_dims(xr.open_mfdataset(model_path + model + '/SSH/' + str(year)  + '/*.nc')
-                                            , model)
+# def get_reanalisys(lat, lon, model, di, df):
+#     reanal = {}
+#     years = list(set([di.year, df.year]))
+#     for year in years:
+#         reanal[year] = set_reanalisys_dims(xr.open_mfdataset(model_path + model + '/SSH/' + str(year)  + '/*.nc')
+#                                             , model)
         
-    reanalisys = xr.concat(list(reanal.values()), dim="time")
-    model_series = reanalisys.sel(latitude=lat, longitude=lon, method='nearest')
-    model_series = model_series.sel(time=slice(di, df))
+#     reanalisys = xr.concat(list(reanal.values()), dim="time")
+#     model_series = reanalisys.sel(latitude=lat, longitude=lon, method='nearest')
+#     model_series = model_series.sel(time=slice(di, df))
 
-    mod_ssh = model_series['ssh'].values
-    # nao tava dando problema entao n ha necessidade de fazer assim
-    # mod_ssh_to_filt = np.concatenate((np.full(len(mod_ssh)//2, mod_ssh.mean()), mod_ssh))
-    # mod_time = pd.date_range(end=model_series['time'].values[-1], periods=len(mod_ssh_to_filt), freq='D')
-    mod_time = model_series['time'].values
-    mod_band = filtro.filtra_dados(mod_ssh, mod_time, 'band', modelo = True)
+#     mod_ssh = model_series['ssh'].values
+#     # nao tava dando problema entao n ha necessidade de fazer assim
+#     # mod_ssh_to_filt = np.concatenate((np.full(len(mod_ssh)//2, mod_ssh.mean()), mod_ssh))
+#     # mod_time = pd.date_range(end=model_series['time'].values[-1], periods=len(mod_ssh_to_filt), freq='D')
+#     mod_time = model_series['time'].values
+#     mod_band = filtro.filtra_dados(mod_ssh, mod_time, 'band', modelo = True)
 
-    return reanalisys, mod_ssh, mod_band, mod_time
+#     return reanalisys, mod_ssh, mod_band, mod_time
 
 
 pts = pd.read_csv(path_50m, header= None, sep = "\s+", names = ['lon', 'lat'])
@@ -105,10 +97,11 @@ lon = ds['lon'].values
 bathymetry = ds['elevation'].values  # Ou o nome da variável correspondente no seu arquivo
 bathymetry = np.where(bathymetry > 0, np.nan, bathymetry)
 # bathymetry = np.where(bathymetry == -50, bathymetry, np.nan)
-bathy_conts = np.array([-3000, -50, 0])
+bathy_conts = np.array([-3000, -200, -50, 0])
 
 
 pts_plot = pts[pts['lat'].between(-30.5, -30.4)]
+pts_plot = pts
 plot_pts(pts_plot)
 # _____
 # lat : lon
@@ -314,7 +307,12 @@ pts_dict = {'lon': {
   35: 2.0008772,
   36: 3.0053483}}
 
-pd.DataFrame(pts_dict)
+pts_plot = pd.DataFrame(pts_dict)
+bathy_conts = np.array([-3000, -200, -50, 0])
+
+# plot_pts(pts_plot)
+
+pts_wavelet = [-30, -20, -15, -10]
 
 def plot_pts(pts_plot):
     coord = ccrs.PlateCarree()
@@ -337,7 +335,12 @@ def plot_pts(pts_plot):
         plt.plot(row['lon'], row['lat'],
                 color='red', linewidth=2, marker='*',
                 transform=ccrs.PlateCarree()
-                )  
+                )
+        if round(row['lat'],1) in pts_wavelet:
+          plt.plot(row['lon'], row['lat'],
+                  color='yellow', linewidth=2, marker='o',
+                  transform=ccrs.PlateCarree()
+                  )
 
     # Ajustar os limites do mapa
     lat_min = pts_plot['lat'].min() - 1  # Ajuste conforme necessário
@@ -357,5 +360,211 @@ def plot_pts(pts_plot):
     gl.yformatter = LATITUDE_FORMATTER
     plt.show()
 
-    # plt.savefig('/Users/breno/mestrado/pts.png', dpi = 300)
+    # plt.savefig('/Users/breno/mestrado/new_50m_pts.png')
     # plt.savefig(fig_folder + 'points', dpi=300)
+
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import matplotlib.ticker as mticker
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+import matplotlib.lines as mlines
+
+def plot_pts_deepseek(pts_plot):
+    coord = ccrs.PlateCarree()
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(111, projection=coord)
+
+    # Definindo as cores para cada intervalo
+    colors = ["darkblue", "blue", "lightblue", "cyan"]
+    bounds = [-3000, -200, -50, 0]
+    cmap = mcolors.ListedColormap(colors)
+    norm = mcolors.BoundaryNorm(bounds, cmap.N)
+
+    # Usando o colormap personalizado
+    bathy = ax.contourf(lon, lat, bathymetry, levels=bounds, transform=coord, cmap=cmap, norm=norm)
+    fig.colorbar(bathy, ax=ax, orientation="vertical", label="Batimetria (m)", shrink=0.7, pad=0.08, aspect=40)
+
+    ax.add_feature(cfeature.LAND, facecolor='lightgray')
+    ax.add_feature(cfeature.BORDERS, zorder=10)
+    ax.add_feature(cfeature.COASTLINE, zorder=10)
+
+    for index, row in pts_plot.iterrows():
+        plt.plot(row['lon'], row['lat'],
+                color='red', linewidth=2, marker='*',
+                transform=ccrs.PlateCarree()
+                )  
+
+    lat_min = pts_plot['lat'].min() - 1
+    lat_max = pts_plot['lat'].max() + 1
+    lon_min = pts_plot['lon'].min() - 1
+    lon_max = pts_plot['lon'].max() + 1
+
+    ax.set_extent([lon_min, lon_max, lat_min, lat_max], crs=ccrs.PlateCarree())
+
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                    linewidth=2, color='gray', alpha=0.5, linestyle='--')
+    gl.xlabels_top = False
+    gl.ylabels_left = False
+    gl.xlocator = mticker.FixedLocator([-50, -45, -40, -37, -35])
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    plt.show()
+
+
+def plot_pts_deepseek2(pts_plot):
+    coord = ccrs.PlateCarree()
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(111, projection=coord)
+
+    # Extraindo cores específicas da paleta "Blues"
+    blues_cmap = plt.get_cmap("Blues")  # Paleta Blues do Matplotlib
+    colors = [
+        blues_cmap(0.3),  # Tom mais escuro para -3000
+        blues_cmap(0.5),  # Tom médio para -200
+        blues_cmap(0.8),  # Tom mais claro para -50
+        blues_cmap(1.0)   # Tom muito claro para 0
+    ]
+
+    # Definindo os intervalos
+    bounds = [-3000, -200, -50, 0]
+    cmap = mcolors.ListedColormap(colors)  # Criando um colormap com as cores extraídas
+    norm = mcolors.BoundaryNorm(bounds, cmap.N)  # Normalização para os intervalos definidos
+
+    # Usando o colormap personalizado
+    bathy = ax.contourf(lon, lat, bathymetry, levels=bounds, transform=coord, cmap=cmap, norm=norm)
+    # fig.colorbar(bathy, ax=ax, orientation="vertical", label="Batimetria (m)", shrink=0.7, pad=0.08, aspect=40)
+
+    cbar = fig.colorbar(bathy, ax=ax, orientation="vertical", shrink=0.7, pad=0.08, aspect=40)
+    cbar.set_label("Batimetria (m)", fontsize=14)  # Aumenta o tamanho da fonte do rótulo
+
+    # Adicionando features geográficas
+    ax.add_feature(cfeature.LAND, facecolor='lightgray')
+    ax.add_feature(cfeature.BORDERS, zorder=10)
+    ax.add_feature(cfeature.COASTLINE, zorder=10)
+
+    # Plotando os pontos
+    for index, row in pts_plot.iterrows():
+        if round(row['lat'],1) in pts_wavelet:
+          plt.plot(row['lon'], row['lat'],
+                  color='yellow', linewidth=4, marker='o',
+                  transform=ccrs.PlateCarree(), markersize = 10
+                  )
+        plt.plot(row['lon'], row['lat'],
+                color='red', linewidth=2, marker='*',
+                transform=ccrs.PlateCarree()
+                )
+
+    # Ajustando os limites do mapa
+    lat_min = pts_plot['lat'].min() - 1
+    lat_max = pts_plot['lat'].max() + 1
+    lon_min = pts_plot['lon'].min() - 1
+    lon_max = pts_plot['lon'].max() + 1
+
+    ax.set_extent([lon_min, lon_max, lat_min, lat_max], crs=ccrs.PlateCarree())
+
+    # Adicionando gridlines
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                    linewidth=2, color='gray', alpha=0.5, linestyle='--')
+    gl.xlabels_top = False
+    gl.ylabels_left = False
+    gl.xlocator = mticker.FixedLocator([-50, -45, -40, -35])
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+  # Criação das legendas manualmente
+
+    red_legend = mlines.Line2D([], [], color='red', marker='*', linestyle='None',
+                              markersize=10, label='Pontos utilizados para o Hovmöller')
+    yellow_legend = mlines.Line2D([], [], color='yellow', marker='o', linestyle='None',
+                                  markersize=10, label='Pontos utilizados para a Ondaleta')
+
+    # Adicionando a legenda ao plot e posicionando fora do gráfico
+    plt.legend(handles=[red_legend, yellow_legend], loc='upper center', 
+              bbox_to_anchor=(0.5, -0.03), ncol=2, fontsize=14)
+
+    # Ajustando o layout para evitar que a legenda seja cortada
+    plt.tight_layout()
+
+
+    # plt.show()
+
+
+    plt.savefig('/Users/breno/mestrado/50m_pts_wav.png')
+
+def plot_pts_deepseek_3(pts_plot):
+  coord = ccrs.PlateCarree()
+  fig = plt.figure(figsize=(12, 12))
+  ax = fig.add_subplot(111, projection=coord)
+
+  # Extraindo cores específicas da paleta "Blues"
+  blues_cmap = plt.get_cmap("Blues")  # Paleta Blues do Matplotlib
+  colors = [
+      blues_cmap(0.3),  # Tom mais escuro para -3000
+      blues_cmap(0.5),  # Tom médio para -200
+      blues_cmap(0.8),  # Tom mais claro para -50
+      blues_cmap(1.0)   # Tom muito claro para 0
+  ]
+
+  # Definindo os intervalos
+  bounds = [-3000, -200, -50, 0]
+  cmap = mcolors.ListedColormap(colors)  # Criando um colormap com as cores extraídas
+  norm = mcolors.BoundaryNorm(bounds, cmap.N)  # Normalização para os intervalos definidos
+
+  # Usando o colormap personalizado
+  bathy = ax.contourf(lon, lat, bathymetry, levels=bounds, transform=coord, cmap=cmap, norm=norm)
+
+  # Adicionando a colorbar
+  cbar = fig.colorbar(bathy, ax=ax, orientation="vertical", shrink=0.7, pad=0.08, aspect=40)
+  cbar.set_label("Batimetria (m)", fontsize=14)  # Aumenta o tamanho da fonte do rótulo
+
+  # Adicionando features geográficas
+  ax.add_feature(cfeature.LAND, facecolor='lightgray')
+  ax.add_feature(cfeature.BORDERS, zorder=10)
+  ax.add_feature(cfeature.COASTLINE, zorder=10)
+
+  # Plotando os pontos
+  for index, row in pts_plot.iterrows():
+      if round(row['lat'], 1) in pts_wavelet:
+          plt.plot(row['lon'], row['lat'],
+                  color='yellow', linewidth=4, marker='o', markersize=10,
+                  transform=ccrs.PlateCarree()
+                  )
+      plt.plot(row['lon'], row['lat'],
+              color='red', linewidth=2, marker='*',
+              transform=ccrs.PlateCarree()
+              )
+
+  # Ajustando os limites do mapa
+  lat_min = pts_plot['lat'].min() - 1
+  lat_max = pts_plot['lat'].max() + 1
+  lon_min = pts_plot['lon'].min() - 1
+  lon_max = pts_plot['lon'].max() + 1
+
+  ax.set_extent([lon_min, lon_max, lat_min, lat_max], crs=ccrs.PlateCarree())
+
+  # Adicionando gridlines
+  gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                    linewidth=2, color='gray', alpha=0.5, linestyle='--')
+  gl.xlabels_top = False
+  gl.ylabels_left = False
+  gl.xlocator = mticker.FixedLocator([-50, -45, -40, -35])
+  gl.xformatter = LONGITUDE_FORMATTER
+  gl.yformatter = LATITUDE_FORMATTER
+
+  # Criação das legendas manualmente
+  red_legend = mlines.Line2D([], [], color='red', marker='*', linestyle='None',
+                            markersize=10, label='Pontos utilizados para o Hovmöller')
+  yellow_legend = mlines.Line2D([], [], color='yellow', marker='o', linestyle='None',
+                                markersize=10, label='Pontos utilizados para a Ondaleta')
+
+  # Adicionando a legenda ao plot e posicionando abaixo do gráfico
+  legend = plt.legend(handles=[red_legend, yellow_legend], loc='upper center',
+                      bbox_to_anchor=(0.5, -0.05), ncol=2, fontsize=14, frameon=True)
+
+  # Ajustando o layout para evitar que a legenda seja cortada
+  plt.subplots_adjust(bottom=0.2)  # Ajusta o espaço abaixo do gráfico para acomodar a legenda
+
+  # Salvando a figura
+  plt.savefig('/Users/breno/mestrado/50m_pts_wav_t.png', bbox_inches='tight', dpi=300)
