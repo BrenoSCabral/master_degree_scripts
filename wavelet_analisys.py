@@ -82,24 +82,24 @@ for latlon in pts:
     cmap_levels = [0.0078125, 0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0] # , 64.0# , 128.0, 256.0]
 
     # Plot da ondaleta pra cada ano:
-    anos = range(1993, 2024)
-    for ano in anos:
-        label = 'BRAN'
+    # anos = range(1993, 2024)
+    # for ano in anos:
+    #     label = 'BRAN'
 
-        # aqui embaixo ta plotando a serie filtrada em cima
-        t0 = np.datetime64(f'{ano}-01-01')
-        tf = np.datetime64(f'{ano}-12-31')
+    #     # aqui embaixo ta plotando a serie filtrada em cima
+    #     t0 = np.datetime64(f'{ano}-01-01')
+    #     tf = np.datetime64(f'{ano}-12-31')
 
-        ticks = []
+    #     ticks = []
 
-        for i in range(3,31,3):
-            ticks.append(np.log2(i))
+    #     for i in range(3,31,3):
+    #         ticks.append(np.log2(i))
 
 
-        waipy.wavelet_plot(label, time, data_norm, dtmin, result,  custom_data=filt_model, ylabel_data='ASM Filtrada (cm)', extra_plot=[False],             
-                    xmin=t0, xmax=tf, ymin=np.log2(3), ymax=np.log2(30), cmap_levels=cmap_levels, spectrum_max=10, yticks=ticks,)
-        plt.savefig(f'/Users/breno/mestrado/ondaleta/{latlon[0]}/{ano}.png')
-        plt.close('all')
+    #     waipy.wavelet_plot(label, time, data_norm, dtmin, result,  custom_data=filt_model, ylabel_data='ASM Filtrada (cm)', extra_plot=[False],             
+    #                 xmin=t0, xmax=tf, ymin=np.log2(3), ymax=np.log2(30), cmap_levels=cmap_levels, spectrum_max=10, yticks=ticks,)
+    #     plt.savefig(f'/Users/breno/mestrado/ondaleta/{latlon[0]}/{ano}.png')
+    #     plt.close('all')
 
     # # isso aqui faz o plot com a energia integrada
 
@@ -137,24 +137,41 @@ for latlon in pts:
         energia_integrada = np.sum(energia_selecionada, axis=0)
         return energia_integrada
 
+    def integra_energia_div(faixa_min, faixa_max):
+        mask = (periods >= faixa_min) & (periods < faixa_max)
+        energia_selecionada = wavelet_power[mask, :]
+
+        # Passo 4: Integrar a energia ao longo da faixa selecionada
+        energia_integrada = np.sum(energia_selecionada, axis=0)/mask.sum()
+        return energia_integrada
+
+    df_energy_raw = pd.DataFrame(index=time)
+
+    df_energy_raw['Energia total'] = integra_energia(3, 30)
+    df_energy_raw['3 a 5'] = integra_energia(3, 5)
+    df_energy_raw['5 a 8'] = integra_energia(5, 8)
+    df_energy_raw['8 a 16'] = integra_energia(8, 16)
+    df_energy_raw['16 a 30'] = integra_energia(16, 30)
 
 
+    # Converter o índice do DataFrame para datetime, caso ainda não seja
+    df_energy_raw.index = pd.to_datetime(df_energy_raw.index)
 
     df_energy = pd.DataFrame(index=time)
 
-    df_energy['Energia total'] = integra_energia(3, 30)
-    df_energy['3 a 5'] = integra_energia(3, 5)
-    df_energy['5 a 8'] = integra_energia(5, 8)
-    df_energy['8 a 16'] = integra_energia(8, 16)
-    df_energy['16 a 30'] = integra_energia(16, 30)
+    df_energy['Energia total'] = integra_energia_div(3, 30)
+    df_energy['3 a 5'] = integra_energia_div(3, 5)
+    df_energy['5 a 8'] = integra_energia_div(5, 8)
+    df_energy['8 a 16'] = integra_energia_div(8, 16)
+    df_energy['16 a 30'] = integra_energia_div(16, 30)
 
 
     # Converter o índice do DataFrame para datetime, caso ainda não seja
     df_energy.index = pd.to_datetime(df_energy.index)
 
-    #############################
-    # plot das OCCs mais altas #
-    ############################
+    # #############################
+    # # plot das OCCs mais altas #
+    # ############################
 
     fmodel_df = pd.DataFrame(index=time)
     fmodel_df['ssh'] = filt_model
@@ -174,61 +191,63 @@ for latlon in pts:
     # 4. Concatenar todas as janelas de eventos em um DataFrame
     event_windows_df = pd.concat(event_windows)
 
-    # 5. Salvar os resultados no Excel
-    output_path = "event_analysis.xlsx"
-    with pd.ExcelWriter(output_path) as writer:
-        high_events.to_excel(writer, sheet_name="High Events")
-        event_windows_df.to_excel(writer, sheet_name="Event Windows")
+    # # 5. Salvar os resultados no Excel
+    # output_path = "event_analysis.xlsx"
+    # with pd.ExcelWriter(output_path) as writer:
+    #     high_events.to_excel(writer, sheet_name="High Events")
+    #     event_windows_df.to_excel(writer, sheet_name="Event Windows")
 
-    # 6. Plotar a série temporal de cada evento
-    output_dir = f"/Users/breno/mestrado/ondaleta/{latlon[0]}/extreme_events/"    
-    os.makedirs(output_dir, exist_ok=True)
-
-
-
-
-    df_energy2 = df_energy.copy()
-    df_energy2['ssh'] = fmodel_df['ssh']
-
-    for event_date in high_events.index:
-        # Filtrar o período de 15 dias antes e depois do evento
-        start_date = event_date - pd.Timedelta(days=15)
-        end_date = event_date + pd.Timedelta(days=15)
-        plot_data = df_energy2.loc[start_date:end_date]
-
-        # Preparar os subplots
-        fig, axes = plt.subplots(nrows=6, ncols=1, figsize=(12, 10), constrained_layout=True, sharex=True)
-
-        # 4. Subplot 1: Série temporal de SSH
-        axes[0].plot(plot_data.index, plot_data['ssh'], color='blue', label='SSH')
-        axes[0].axhline(perc99_9, color='red', linestyle='--', label='Percentil 99.9')
-        axes[0].axvline(event_date, color='black', linestyle='--', label='Evento')
-        axes[0].set_ylabel("SSH [cm]")
-        axes[0].legend(loc="upper left")
-        axes[0].set_title(f"Evento em {event_date.date()}")
-
-        # 5. Subplots 2 a 6: Integração de energia em diferentes faixas
-        energy_labels = ['Energia total', '3 a 5', '5 a 8', '8 a 16', '16 a 30']
-        colors = ['darkblue', 'darkgreen', 'orange', 'purple', 'brown']
-
-        for i, col in enumerate(energy_labels):
-            axes[i + 1].plot(plot_data.index, plot_data[col], color=colors[i], label=col)
-            axes[i + 1].axvline(event_date, color='black', linestyle='--')  # Linha vertical no evento
-            axes[i + 1].set_ylabel(f"{col} [cm²]")
-            axes[i + 1].legend(loc="upper left")
-
-        # Configurar eixo x (datas) e ticks
-        axes[-1].set_xlabel("Data")
-        for ax in axes:
-            ax.grid()
-
-        # Salvar o gráfico
-        plt.savefig(f"{output_dir}/event_{event_date.date()}.png")
-        plt.close()
+    # # 6. Plotar a série temporal de cada evento
+    # output_dir = f"/Users/breno/mestrado/ondaleta/{latlon[0]}/extreme_events/"    
+    # os.makedirs(output_dir, exist_ok=True)
 
 
 
 
+    # df_energy2 = df_energy.copy()
+    # df_energy2['ssh'] = fmodel_df['ssh']
+
+    # for event_date in high_events.index:
+    #     # Filtrar o período de 15 dias antes e depois do evento
+    #     start_date = event_date - pd.Timedelta(days=15)
+    #     end_date = event_date + pd.Timedelta(days=15)
+    #     plot_data = df_energy2.loc[start_date:end_date]
+
+    #     # Preparar os subplots
+    #     fig, axes = plt.subplots(nrows=6, ncols=1, figsize=(12, 10), constrained_layout=True, sharex=True)
+
+    #     # 4. Subplot 1: Série temporal de SSH
+    #     axes[0].plot(plot_data.index, plot_data['ssh'], color='blue', label='SSH')
+    #     axes[0].axhline(perc99_9, color='red', linestyle='--', label='Percentil 99.9')
+    #     axes[0].axvline(event_date, color='black', linestyle='--', label='Evento')
+    #     axes[0].set_ylabel("SSH [cm]")
+    #     axes[0].legend(loc="upper left")
+    #     axes[0].set_title(f"Evento em {event_date.date()}")
+
+    #     # 5. Subplots 2 a 6: Integração de energia em diferentes faixas
+    #     energy_labels = ['Energia total', '3 a 5', '5 a 8', '8 a 16', '16 a 30']
+    #     colors = ['darkblue', 'darkgreen', 'orange', 'purple', 'brown']
+
+    #     for i, col in enumerate(energy_labels):
+    #         axes[i + 1].plot(plot_data.index, plot_data[col], color=colors[i], label=col)
+    #         axes[i + 1].axvline(event_date, color='black', linestyle='--')  # Linha vertical no evento
+    #         axes[i + 1].set_ylabel(f"{col} [cm²]")
+    #         axes[i + 1].legend(loc="upper left")
+
+    #     # Configurar eixo x (datas) e ticks
+    #     axes[-1].set_xlabel("Data")
+    #     for ax in axes:
+    #         ax.grid()
+
+    #     # Salvar o gráfico
+    #     plt.savefig(f"{output_dir}/event_{event_date.date()}.png")
+    #     plt.close()
+
+
+
+    # #############################
+    # # plot series de energia   #
+    # ############################
 
 
 
@@ -285,8 +304,65 @@ for latlon in pts:
     axes[-1].set_xlabel('Ano')
 
     plt.tight_layout()
+    plt.savefig(f'/Users/breno/mestrado/ondaleta/{latlon[0]}/energy_series_per_band.png', dpi=500)
+    plt.close()
+
+
+    # Plot das series de energia
+    fig = plt.figure(figsize=(15,7))
+    axe = fig.add_subplot(111)
+
+    # Defina os limites do eixo x e y para todos os subgráficos
+    x_limits = (pd.Timestamp('1993-01-01'), pd.Timestamp('2023-01-01'))
+    y_limits = (0, 32)
+
+    ax1= fig.add_subplot(511)
+    ax2= fig.add_subplot(512)
+    ax3= fig.add_subplot(513)
+    ax4= fig.add_subplot(514)
+    ax5= fig.add_subplot(515)
+    axes = [ax1, ax2, ax3, ax4, ax5]
+
+    for i, col in enumerate(df_energy_raw.columns):
+        ax = axes[i]
+        ax.plot(df_energy_raw[col])
+        if i == 0:
+            ylbl = 'Total'
+        else:
+            ylbl = f'{col} dias'
+        ax.yaxis.set_label_position("right")
+        ax.xaxis.set_major_locator(mdates.YearLocator(1))  # Ticks principais a cada ano
+        ax.xaxis.set_minor_locator(mdates.MonthLocator(interval=6))  # Ticks menores a cada 6 meses
+        
+        ax.set_ylabel(ylbl)
+        ax.set_xlim(x_limits)
+        ax.set_ylim(y_limits)
+
+        
+        # Remover rótulos do eixo x dos gráficos superiores
+        if i < len(axes) - 1:
+            ax.set_xticklabels([])
+
+    # Configurar o último eixo (axes[4])
+    axe.spines['top'].set_color('none')
+    axe.spines['bottom'].set_color('none')
+    axe.spines['left'].set_color('none')
+    axe.spines['right'].set_color('none')
+    axe.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
+    axe.set_ylabel('Energia Integrada [cm²]')
+    #
+
+    axes[-1].xaxis.set_major_locator(mdates.YearLocator(2))  # Ticks principais a cada ano
+    axes[-1].xaxis.set_minor_locator(mdates.MonthLocator(interval=6))  # Ticks menores a cada 6 meses
+    axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%Y'))  # Formato do ano
+    plt.gcf().autofmt_xdate()
+
+    axes[-1].set_xlabel('Ano')
+
+    plt.tight_layout()
     plt.savefig(f'/Users/breno/mestrado/ondaleta/{latlon[0]}/energy_series.png', dpi=500)
     plt.close()
+
 
     # Adicionar uma coluna com o número do mês (1 = Janeiro, 2 = Fevereiro, ...)
     df_energy['month'] = df_energy.index.month
@@ -332,7 +408,7 @@ for latlon in pts:
 
     # Salvar ou mostrar o gráfico
     plt.tight_layout()
-    plt.savefig(f"/Users/breno/mestrado/ondaleta/{latlon[0]}/energia_media_mensal.png", dpi=300)
+    plt.savefig(f"/Users/breno/mestrado/ondaleta/{latlon[0]}/energia_media_mensal_per_band.png", dpi=300)
     plt.close()
     # plt.show()
 
