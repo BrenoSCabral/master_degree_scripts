@@ -39,10 +39,10 @@ def get_reanalisys(lat, lon, model, di, df):
     reanal = {}
     years = list(set([di.year, df.year]))
     for year in years:
-        # reanal[year] = set_reanalisys_dims(xr.open_mfdataset(model_path + model + '/*.nc')
-        #                                   , model)        
-        reanal[year] = set_reanalisys_dims(xr.open_mfdataset(model_path + model + '/SSH/' + str(year)  + '/*.nc')
-                                             , model)
+        reanal[year] = set_reanalisys_dims(xr.open_mfdataset(model_path + str(year)  + '/*.nc')
+                                           , model)        
+        # reanal[year] = set_reanalisys_dims(xr.open_mfdataset(model_path + model + '/SSH/' + str(year)  + '/*.nc')
+        #                                      , model)
         
     reanalisys = xr.concat(list(reanal.values()), dim="time")
     model_series = reanalisys.sel(latitude=lat, longitude=lon, method='nearest')
@@ -233,16 +233,243 @@ for year in range(1995, 2024):
 
     # Hovmoller:
     hovmoller_data = ph.prepare_hovmoller_data(df_ssh) * 100 # passando pra m
+    hovmoller_data.to_csv('/Users/breno/mestrado/hov_data.csv')
     print(f"comecou os plots de {year}")
     ph.plot_hovmoller(hovmoller_data, model=model, fig_folder=fig_folder)
     # ph.plot_hovmoller_u20(hovmoller_data[hovmoller_data.index < -20], model=model, fig_folder=fig_folder)
     #ph.plot_hovmoller_o20(hovmoller_data[hovmoller_data.index >= -20], model=model, fig_folder=fig_folder)
 
 
+######
+# tentando calcular coerencia
+#####
+from scipy.signal import coherence
+pd.read_csv('/Users/breno/mestrado/hov_data.csv', index_col=0)
+
+def plot_coherence(signal1, signal2, fs=1.0, title='Coerência'):
+    f, Cxy = coherence(signal1, signal2, fs=fs, window='hann', nperseg=256)
+    plt.figure()
+    plt.plot(f, Cxy)
+    plt.xlabel('Frequência [Hz]')
+    plt.ylabel('Coerência')
+    plt.title(title)
+    plt.show()
+
+data = hovmoller_data.T.copy()
+
+# Exemplo: Calcular a coerência entre duas latitudes
+latitudes = data.columns  # Lista de latitudes
+lat1, lat2 = -33.000000, -32.000000  # Escolha duas latitudes para comparar
+
+# Extraia as séries temporais para as latitudes escolhidas
+signal1 = data[lat1].values
+signal2 = data[lat2].values
+
+# Calcule e plote a coerência
+plot_coherence(signal1, signal2, fs=1.0, title=f'Coerência entre {lat1} e {lat2}')
+
+
+#######
+# coerencia mapa
+#####
+
+from scipy.signal import coherence
+
+# Lista de latitudes
+latitudes = data.columns
+# latitudes = latitudes[10:]
+
+# Matriz para armazenar a coerência média entre pares
+coherence_matrix = np.zeros((len(latitudes), len(latitudes)))
+
+# Loop para calcular a coerência entre todos os pares
+for i, lat1 in enumerate(latitudes):
+    for j, lat2 in enumerate(latitudes):
+        if i < j:  # Evitar cálculos redundantes
+            signal1 = data[lat1].values
+            signal2 = data[lat2].values
+            f, Cxy = coherence(signal1, signal2, fs=1.0, window='hann', nperseg=256)
+            coherence_matrix[i, j] = np.mean(Cxy)  # Coerência média
+
+# Visualize a matriz de coerência
+plt.imshow(coherence_matrix, cmap='viridis', origin='lower', extent=[latitudes.min(), latitudes.max(), latitudes.min(), latitudes.max()])
+plt.colorbar(label='Coerência Média')
+plt.xlabel('Latitude')
+plt.ylabel('Latitude')
+plt.title('Mapa de Coerência')
+plt.show()
+
+
+####
+# com valores
+####
+
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Gerar dados de exemplo (substitua pelo seu coherence_matrix)
+coherence_matrix = np.random.rand(len(latitudes), len(latitudes))  # Exemplo aleatório
+np.fill_diagonal(coherence_matrix, 1)  # Coerência de um sinal consigo mesmo é 1
+
+# Plotar o mapa de calor
+plt.figure(figsize=(10, 8))
+sns.heatmap(coherence_matrix, annot=True, fmt=".1f", cmap="viridis",
+            xticklabels=latitudes, yticklabels=latitudes,
+            cbar_kws={'label': 'Coerência Média'})
+
+plt.title('Mapa de Coerência com Valores Anotados', fontsize=16)
+plt.xlabel('Latitude', fontsize=14)
+plt.ylabel('Latitude', fontsize=14)
+plt.xticks(rotation=45)
+plt.yticks(rotation=0)
+plt.tight_layout()
+plt.show()
+
+#####
+# dois pts
+####
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import coherence
+
+# Função para calcular e plotar a coerência em função do período
+def plot_coherence_period(signal1, signal2, fs=1.0, title='Coerência'):
+    # Calcular a coerência e as frequências
+    f, Cxy = coherence(signal1, signal2, fs=fs, window='hann', nperseg=256)
+    
+    # Converter frequência (Hz) para período (dias)
+    period = 1 / f  # Período em dias (assumindo fs=1/dia)
+    
+    # Plotar a coerência em função do período
+    plt.figure(figsize=(10, 6))
+    plt.plot(period, Cxy, label='Coerência')
+    plt.xscale('log')  # Escala logarítmica para o eixo x (períodos)
+    plt.xlabel('Período (dias)', fontsize=14)
+    plt.ylabel('Coerência', fontsize=14)
+    plt.title(title, fontsize=16)
+    plt.grid(True, which="both", ls="--")
+    plt.legend()
+    plt.show()
+
+# Exemplo: Calcular e plotar a coerência para um par de latitudes
+latitudes = data.columns  # Lista de latitudes
+lat1, lat2 = latitudes[2], latitudes[-1]  # Escolha duas latitudes para comparar
+
+# Extraia as séries temporais para as latitudes escolhidas
+signal1 = data[lat1].values
+signal2 = data[lat2].values
+
+# Calcule e plote a coerência em função do período
+plot_coherence_period(signal1, signal2, fs=1.0, title=f'Coerência entre {lat1} e {lat2}')
+
+
+
+####
+# mapa de coerencias  ---->> UTILIZEI ESSE
+###
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import coherence
+
+# Função para calcular a coerência e converter frequência para período
+def calculate_coherence_period(signal1, signal2, fs=1.0):
+    f, Cxy = coherence(signal1, signal2, fs=fs, window='hann', nperseg=256)
+    period = 1 / f  # Converter frequência para período (dias)
+    
+    # Remover valores de frequência zero (para evitar NaN em período)
+    valid_frequencies = f > 0
+    period = period[valid_frequencies]
+    Cxy = Cxy[valid_frequencies]
+    
+    return period, Cxy
+
+# Lista de latitudes
+latitudes = data.columns
+
+for central_lat in latitudes:
+# Escolha do ponto central
+# central_lat = -33.000000  # Substitua pelo ponto central desejado
+    central_index = np.where(latitudes == central_lat)[0][0]
+
+    # Extrair o sinal do ponto central
+    central_signal = data[central_lat].values
+
+    # Inicializar a matriz de coerência
+    n_latitudes = len(latitudes)
+    n_periods = 128  # Número de períodos (ajuste conforme necessário)
+    coherence_matrix = np.zeros((n_latitudes, n_periods))
+    periods = np.zeros(n_periods)
+
+    # Calcular a coerência entre o ponto central e todos os outros pontos
+    for i, lat in enumerate(latitudes):
+        if lat != central_lat:  # Ignorar o ponto central
+            signal = data[lat].values
+            period, Cxy = calculate_coherence_period(central_signal, signal, fs=1.0)
+            
+            # Preencher a matriz de coerência com os valores válidos
+            coherence_matrix[i, :len(Cxy)] = Cxy[:n_periods]  # Garantir o mesmo tamanho
+            periods[:len(period)] = period[:n_periods]  # Períodos correspondentes
+
+    # Verificar valores não finitos
+    if np.any(np.isnan(coherence_matrix)) or np.any(np.isnan(periods)):
+        print("Existem valores NaN nos dados de coerência ou períodos!")
+
+    # Plotar o gráfico
+    plt.figure(figsize=(12, 8))
+    cp = plt.contourf(periods, latitudes, coherence_matrix, np.arange(0,1.05,0.05), cmap='viridis')
+    # Adicionar a barra de cores (colorbar)
+    plt.colorbar(cp, label='Coerência')
+    # plt.xscale('log')  # Escala logarítmica para o eixo x (períodos)
+    plt.xlim([3, 30])
+    plt.ylim([-33, 3.1])
+    plt.xlabel('Período (dias)', fontsize=14)
+    plt.ylabel('Latitude', fontsize=14)
+    plt.title(f'Coerência em Relação a ({central_lat})', fontsize=16)
+    plt.grid(True, which="both", ls="--", color='white', alpha=0.5)
+    plt.tight_layout()
+    plt.savefig(f'/Users/breno/mestrado/coerencia/{central_lat}.png')
+
 '''
 TODO:
 1 - Fazer o calculo da velocidade utilizando a media
 '''
+
+
+
+
+
+#
+# crosspecs <-
+#
+latitudes = data.columns
+for i1 in data.columns:
+    xx1=np.asarray(data[i1])
+    for i2 in data.columns:
+        xx2=np.asarray(data[i2])
+        ppp=len(xx1)
+        dt=24#diario
+        win=2
+        smo=999
+        ci=99
+        h1,h2,fff,coef,conf,fase=crospecs(xx1, xx2, ppp, dt, win, smo, ci)
+
+        fig = plt.figure(figsize=(8,6))
+        plt.plot(1./fff/24,coef,'b')
+        plt.plot(1./fff/24,conf,'--k')
+        plt.xlim([0,30])
+        plt.ylabel('[Coerência]')
+        plt.yticks([0,.5,1])
+        plt.xlabel('Período (dias)')
+        plt.grid()
+        # plt.show()
+
+        os.makedirs(f'/Users/breno/mestrado/crosspecs_coh/{i1}/', exist_ok=True)
+        plt.savefig(f'/Users/breno/mestrado/crosspecs_coh/{i1}/{i2}.png')
+
+
 
 ##########################
 # calculando a velocidade --> Acho que não vai dar certo pela limitação física do meu camarada
