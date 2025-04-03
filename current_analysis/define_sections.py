@@ -217,6 +217,51 @@ def plot_line(lines_plot):
     plt.savefig('/Users/breno/mestrado/linhas_longshore_adj.png')
 
 
+def plot_line_nums(lines_plot):
+
+    coord = ccrs.PlateCarree()
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection=coord)
+
+    bathy = ax.contourf(lon, lat, bathymetry, bathy_conts, transform=coord, cmap="Blues")
+    fig.colorbar(bathy, ax=ax, orientation="vertical", label="Batimetria (m)", shrink=0.7, pad=0.08, aspect=40)
+
+    ax.add_feature(cfeature.LAND, facecolor='lightgray')
+    ax.add_feature(cfeature.BORDERS, zorder=10)
+    ax.add_feature(cfeature.COASTLINE, zorder=10)
+
+    # Adicionar linha conectando os pontos
+    for i, line in enumerate(lines_plot, start=1):
+        plt.plot(line['lon'], line['lat'], color='red', linestyle='--', transform=ccrs.PlateCarree())
+        
+        # Adicionar pontos nos extremos
+        start = line.iloc[0]
+        end = line.iloc[-1]
+        plt.plot(start['lon'], start['lat'], color='red', linewidth=2, marker='*', transform=ccrs.PlateCarree())
+        plt.plot(end['lon'], end['lat'], color='red', linewidth=2, marker='*', transform=ccrs.PlateCarree())
+        
+        # Adicionar número ao lado do ponto final
+        plt.text(end['lon'] + 0.3, end['lat'], str(i), color='red', weight='bold', fontsize=12, transform=ccrs.PlateCarree())
+
+    # Ajustar os limites do mapa
+    lat_min = -35  # Ajuste conforme necessário
+    lat_max = 0    # Ajuste conforme necessário
+    lon_min = -55  # Ajuste conforme necessário
+    lon_max = -30  # Ajuste conforme necessário
+
+    ax.set_extent([lon_min, lon_max, lat_min, lat_max], crs=ccrs.PlateCarree())
+
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                    linewidth=2, color='gray', alpha=0.5, linestyle='--')
+    gl.xlabels_top = False
+    gl.ylabels_left = False
+    gl.xlocator = mticker.FixedLocator([-55, -50, -45, -40, -35, -30])
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+
+    plt.savefig('/Users/breno/mestrado/linhas_longshore_adj_nums.png')
+
+
 def interpolate_points(start, end, num_points):
     if num_points % 2 !=0:
         print('selecione um numero par de pontos!')
@@ -345,5 +390,15 @@ for i in range(len(pts_cross)):
     cross_line = interpolate_points(start, end, 10)
 
     lines_plot.append(cross_line)
-plot_line(secs)
+
+# checar get_curr <-----
+
+secs = []
+for section in sections:
+
+    section = section[:-20] # corta uma parte de mar
+    secs.append(section)
+
+plot_line_nums(secs)
+# plot_line(secs)
 print(pts_cross)
