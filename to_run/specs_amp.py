@@ -298,13 +298,15 @@ def sing_plot(hepyao, chio, cloo, prao, image_path):
 
     ax.loglog(prao,hepyao, label = 'DADO', linewidth=1, color='red')
     ax.fill_between(prao,cloo,chio,alpha=0.2, color='tab:red')
+    ax.axvspan(3, 30, color='yellow', alpha=0.3, label='Destaque entre 3 e 30 dias')
+
     ax.legend(loc='lower right')
     ax.grid(which='major')
     ax.grid(which='minor',color='lightgrey')
     # ax.set_xlim([3,30])
 
     plt.tight_layout()
-    plt.savefig(image_path + 'spectral_anal_loglog.png', dpi=200, bbox_inches='tight')
+    plt.savefig(image_path, dpi=200, bbox_inches='tight')
     plt.close()
 
 
@@ -326,7 +328,7 @@ def double_plot(hepyao_1, chio_1, cloo_1, prao_1, hepyao_2, chio_2, cloo_2, prao
     ax.grid(which='minor',color='lightgrey')
 
     plt.tight_layout()
-    plt.savefig(image_path + f'double_spectral_anal_loglog_{label2}.png', dpi=200, bbox_inches='tight')
+    plt.savefig(image_path, dpi=200, bbox_inches='tight')
     plt.close()
 
 
@@ -361,3 +363,9 @@ def double_spec_anal(serie_1, serie_2, image_path, label1, label2):
 
 
     double_plot(hepyao_1, chio_1, cloo_1, prao_1, hepyao_2, chio_2, cloo_2, prao_2, label1, label2, image_path)
+
+# for serie in series:
+#     print(serie)
+#     data = np.asarray(series[serie]['ssh'])
+#     imp = f'/Users/breno/mestrado/specs/{serie}_spec.png'
+#     spec_anal(data, imp, True)
