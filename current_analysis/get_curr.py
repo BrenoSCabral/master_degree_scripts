@@ -809,7 +809,56 @@ def four_window_custom_sem_lim(dep_sup, dep_bot, lon_e, lon_d, top_e, top_d, bot
     plt.savefig(path)
 
 
-def curr_window(dep_sup, dep_bot, lon_e, lon_d, top_e, top_d, bot_e, bot_d, path,ticks, cmap='cool_r'):
+def curr_window(dep_sup, dep_bot, lon_e, lon_d, top_e, top_d, bot_e, bot_d, path,ticks, cmap='cool_r', cbar_label=''):
+
+
+    if cbar_label != '%':
+        vals = np.array([abs(np.nanmax(top_e)), abs(np.nanmax(top_d)),
+                            abs(np.nanmin(top_e)), abs(np.nanmin(top_d)),
+                            abs(np.nanmax(bot_e)), abs(np.nanmax(bot_d)),
+                            abs(np.nanmin(bot_e)), abs(np.nanmin(bot_d))])
+        
+        vals_max = np.nanmax(vals)
+
+        i = 0.001
+        round = 5
+        while vals_max > i:
+            i = i*10
+            round-=1
+
+
+        top_e = np.round(top_e, round)
+        top_d = np.round(top_d, round)
+        bot_e = np.round(bot_e, round)
+        bot_d = np.round(bot_d, round)
+
+        vals = np.array([abs(np.nanmax(top_e)), abs(np.nanmax(top_d)),
+                            abs(np.nanmin(top_e)), abs(np.nanmin(top_d)),
+                            abs(np.nanmax(bot_e)), abs(np.nanmax(bot_d)),
+                            abs(np.nanmin(bot_e)), abs(np.nanmin(bot_d))])
+        
+        vals_max = np.round(np.nanmax(vals) + 10**-(round), round)
+
+        while (str(vals_max * 10 **round).split('.')[0][-1] != '5' and \
+            str(vals_max * 10 **round).split('.')[0][-1] != '0'):
+            
+            vals_max = np.round(vals_max + 10**-(round), round)
+    # futura alternativa eh somar o vals_max ate chegar o multiplo de 5 mais perto e
+    # fazer passo de 5 * 10**round
+    # (np.round(vals_max, round) * 10**round)
+
+    if cbar_label == '%':
+        ticks = np.arange(0, 101, 5)
+    elif np.isnan(vals_max):
+        print(f'Nan no plot {path}')
+    elif cmap != 'cool_r':
+        ticks = np.round(np.arange(-vals_max, vals_max + 10**-round, 5 * 10**-round), round)
+        if len(ticks) < 10:
+            ticks = np.round(np.arange(-vals_max, vals_max + 10**-round, 2.5 * 10**-round), round)
+    else:
+        ticks = np.round(np.arange(0, vals_max + 10**-round, 5 * 10**-round), round)
+        if len(ticks) < 10:
+            ticks = np.round(np.arange(0, vals_max + 10**-round, 2.5 * 10**-round), round)
 
     fig, ax = plt.subplots(2,2, figsize=(12,9))
 
@@ -878,7 +927,8 @@ def curr_window(dep_sup, dep_bot, lon_e, lon_d, top_e, top_d, bot_e, bot_d, path
 
     # Adicionar colorbar à direita
     cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])  # [left, bottom, width, height]
-    cbar = fig.colorbar(im1, cax=cbar_ax, label='', extend='both')
+    cbar = fig.colorbar(im1, cax=cbar_ax, extend='both')
+    cbar.set_label(cbar_label)
 
     plt.subplots_adjust(wspace=0.03, hspace=0.05)
 
@@ -886,7 +936,7 @@ def curr_window(dep_sup, dep_bot, lon_e, lon_d, top_e, top_d, bot_e, bot_d, path
 
     fig.text(0.5, 0.05, 'Distância da costa (km)', ha='center', va='center', rotation='horizontal', fontsize=12)
 
-    plt.savefig(path)
+    plt.savefig(path + '.png')
 
 
 
@@ -1077,7 +1127,7 @@ for section in sections:
                 varf_top_d.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
                 varf_bot_d.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
 
-        output_dir = f'/home/bcabral/mestrado/fig/curr'
+        output_dir = f'/home/bcabral/mestrado/fig/curr_0307'
         os.makedirs(output_dir + f'/{s}/{year}', exist_ok=True)
         # os.makedirs(output_dir + f'/var/{str(year)}', exist_ok=True)
         # os.makedirs(output_dir + f'/varf/{str(year)}', exist_ok=True)
@@ -1094,35 +1144,53 @@ for section in sections:
         vals_mean = np.array([abs(np.nanmax(mean_top)), abs(np.nanmax(mean_bot)),
                             abs(np.nanmin(mean_top)), abs(np.nanmin(mean_bot))])
         
-        vals_mean_max = np.round(np.max(vals_mean),2)
+        vals_mean_max = np.max(vals_mean)
 
         # depois eh necessario repensar na questao do intervalo
 
         curr_window(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
                         dist[:m_lons+1], dist[m_lons:],
                             mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir + f'/{s}/{year}/mean',
-                            np.arange(-vals_mean_max, vals_mean_max+(vals_mean_max)/10,(vals_mean_max)/5), cmap='bwr')
+                            np.arange(-vals_mean_max, vals_mean_max+(vals_mean_max)/10,(vals_mean_max)/5), cmap='bwr', cbar_label='(m/s)')
 
 
         vals_var = np.array([abs(np.nanmax(var_top)), abs(np.nanmax(var_bot)),
                             abs(np.nanmin(var_top)), abs(np.nanmin(var_bot))])
         
-        vals_var_max = np.round(np.max(vals_var),2)
+        vals_var_max = np.max(vals_var)
 
         curr_window(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
                         dist[:m_lons+1], dist[m_lons:],
                         var_top_e, var_top_d, var_bot_e, var_bot_d, output_dir + f'/{s}/{year}/var',
-                        np.arange(0,vals_var_max, vals_var_max/10))
+                        np.arange(0,vals_var_max, vals_var_max/10), cbar_label='(m/s)\u00B2')
+
+        vals_std_max = np.sqrt(vals_var_max)
+
+        curr_window(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        dist[:m_lons+1], dist[m_lons:],
+                        np.sqrt(var_top_e), np.sqrt(var_top_d),
+                        np.sqrt(var_bot_e), np.sqrt(var_bot_d),
+                        output_dir + f'/{s}/{year}/std',
+                        np.arange(0,vals_var_max, vals_var_max/10), cbar_label='(m/s)')
 
         vals_varf = np.array([abs(np.nanmax(varf_top)), abs(np.nanmax(varf_bot)),
                             abs(np.nanmin(varf_top)), abs(np.nanmin(varf_bot))])
         
-        vals_varf_max = np.round(np.max(vals_varf),2)
+        vals_varf_max = np.max(vals_varf)
 
         curr_window(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
                         dist[:m_lons+1], dist[m_lons:],
                         varf_top_e, varf_top_d, varf_bot_e, varf_bot_d, output_dir + f'/{s}/{year}/varf',
-                        np.arange(0,vals_varf_max, vals_varf_max/10))        
+                        np.arange(0,vals_varf_max, vals_varf_max/10), cbar_label='(m/s)\u00B2')
+
+        vals_stdf_max = np.sqrt(vals_varf_max)
+
+        curr_window(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        dist[:m_lons+1], dist[m_lons:],
+                        np.sqrt(varf_top_e), np.sqrt(varf_top_d),
+                        np.sqrt(varf_bot_e), np.sqrt(varf_bot_d),
+                        output_dir + f'/{s}/{year}/stdf',
+                        np.arange(0,vals_stdf_max, vals_stdf_max/10), cbar_label='(m/s)') 
 
 
         perc_top_e = (np.asarray(varf_top_e)/np.asarray(var_top_e)) * 100
@@ -1132,9 +1200,20 @@ for section in sections:
 
         curr_window(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
                         dist[:m_lons+1], dist[m_lons:],
-                        perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir + f'/{s}/{year}/perc', np.arange(0,101,10))
+                        perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir + f'/{s}/{year}/perc', np.arange(0,101,10), cbar_label='%')
         
 
+        perc_top_e_st = (np.asarray(np.sqrt(varf_top_e))/np.asarray(np.sqrt(var_top_e))) * 100
+        perc_top_d_st = (np.asarray(np.sqrt(varf_top_d))/np.asarray(np.sqrt(var_top_d))) * 100
+        perc_bot_e_st = (np.asarray(np.sqrt(varf_bot_e))/np.asarray(np.sqrt(var_bot_e))) * 100
+        perc_bot_d_st = (np.asarray(np.sqrt(varf_bot_d))/np.asarray(np.sqrt(var_bot_d))) * 100
+
+        curr_window(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                        dist[:m_lons+1], dist[m_lons:],
+                        perc_top_e_st, perc_top_d_st, perc_bot_e_st, perc_bot_d_st,
+                        output_dir + f'/{s}/{year}/perc_st', np.arange(0,101,10),
+                        cbar_label='%')
+        
 
         # four_window_custom(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
         #                 lons[:m_lons+1], lons[m_lons:],
@@ -1280,42 +1359,61 @@ for section in sections:
             varf_top_d.append(varf_top.sel(latitude=lat, longitude=lon, method='nearest'))
             varf_bot_d.append(varf_bot.sel(latitude=lat, longitude=lon, method='nearest'))
 
-    output_dir = f'/home/bcabral/mestrado/fig/curr'
+    output_dir = f'/home/bcabral/mestrado/fig/curr_0307'
     os.makedirs(output_dir + f'/{s}/', exist_ok=True)
 
 
     vals_mean = np.array([abs(np.nanmax(mean_top)), abs(np.nanmax(mean_bot)),
                         abs(np.nanmin(mean_top)), abs(np.nanmin(mean_bot))])
     
-    vals_mean_max = np.round(np.max(vals_mean),2)
+    vals_mean_max = np.max(vals_mean)
 
     # depois eh necessario repensar na questao do intervalo
 
     curr_window(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
                     dist[:m_lons+1], dist[m_lons:],
                         mean_top_e, mean_top_d, mean_bot_e, mean_bot_d, output_dir + f'/{s}/mean',
-                        np.arange(-vals_mean_max, vals_mean_max+(vals_mean_max)/10,(vals_mean_max)/5), cmap='bwr')
+                        np.arange(-vals_mean_max, vals_mean_max+(vals_mean_max)/10,(vals_mean_max)/5), cmap='bwr',
+                        cbar_label='(m/s)')
 
 
     vals_var = np.array([abs(np.nanmax(var_top)), abs(np.nanmax(var_bot)),
                         abs(np.nanmin(var_top)), abs(np.nanmin(var_bot))])
     
-    vals_var_max = np.round(np.max(vals_var),2)
+    vals_var_max = np.max(vals_var)
 
     curr_window(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
                     dist[:m_lons+1], dist[m_lons:],
                     var_top_e, var_top_d, var_bot_e, var_bot_d, output_dir + f'/{s}/var',
-                    np.arange(0,vals_var_max, vals_var_max/10))
+                    np.arange(0,vals_var_max, vals_var_max/10), cbar_label='(m/s)\u00B2')
+    
+    vals_std_max = np.sqrt(vals_var_max)
+
+    curr_window(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    dist[:m_lons+1], dist[m_lons:],
+                    np.sqrt(var_top_e), np.sqrt(var_top_d),
+                    np.sqrt(var_bot_e), np.sqrt(var_bot_d),
+                    output_dir + f'/{s}/std',
+                    np.arange(0,vals_std_max, vals_std_max/10), cbar_label='(m/s)')
 
     vals_varf = np.array([abs(np.nanmax(varf_top)), abs(np.nanmax(varf_bot)),
                         abs(np.nanmin(varf_top)), abs(np.nanmin(varf_bot))])
     
-    vals_varf_max = np.round(np.max(vals_varf),2)
+    vals_varf_max = np.max(vals_varf)
 
     curr_window(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
                     dist[:m_lons+1], dist[m_lons:],
                     varf_top_e, varf_top_d, varf_bot_e, varf_bot_d, output_dir + f'/{s}/varf',
-                    np.arange(0,vals_varf_max, vals_varf_max/10))        
+                    np.arange(0,vals_varf_max, vals_varf_max/10), cbar_label='(m/s)\u00B2')
+    
+    vals_stdf_max = np.sqrt(vals_varf_max)
+
+    curr_window(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    dist[:m_lons+1], dist[m_lons:],
+                    np.sqrt(varf_top_e), np.sqrt(varf_top_d),
+                    np.sqrt(varf_bot_e), np.sqrt(varf_bot_d),
+                    output_dir + f'/{s}/stdf',
+                    np.arange(0,vals_varf_max, vals_varf_max/10), cbar_label='(m/s)')
 
 
     perc_top_e = (np.asarray(varf_top_e)/np.asarray(var_top_e)) * 100
@@ -1325,8 +1423,18 @@ for section in sections:
 
     curr_window(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
                     dist[:m_lons+1], dist[m_lons:],
-                    perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir + f'/{s}/perc', np.arange(0,101,10))
+                    perc_top_e, perc_top_d, perc_bot_e, perc_bot_d, output_dir + f'/{s}/perc', np.arange(0,101,10), cbar_label='%')
     
+
+
+    perc_top_e_st = (np.asarray(np.sqrt(varf_top_e))/np.asarray(np.sqrt(var_top_e))) * 100
+    perc_top_d_st = (np.asarray(np.sqrt(varf_top_d))/np.asarray(np.sqrt(var_top_d))) * 100
+    perc_bot_e_st = (np.asarray(np.sqrt(varf_bot_e))/np.asarray(np.sqrt(var_bot_e))) * 100
+    perc_bot_d_st = (np.asarray(np.sqrt(varf_bot_d))/np.asarray(np.sqrt(var_bot_d))) * 100
+
+    curr_window(reanal_subset['depth'].sel(depth=slice(0,200)), reanal_subset['depth'].sel(depth=slice(200,10000)),
+                    dist[:m_lons+1], dist[m_lons:],
+                    perc_top_e_st, perc_top_d_st, perc_bot_e_st, perc_bot_d_st, output_dir + f'/{s}/perc_st', np.arange(0,101,10), cbar_label='%')
 
 stop
 
