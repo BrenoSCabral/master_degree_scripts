@@ -261,6 +261,8 @@ plt.savefig(path)
 ###############
 
 # fazendo uma média de skill por latitude:
+import numpy as np
+
 
 lats = np.asarray(list(ss1['BRAN'].keys()))
 
