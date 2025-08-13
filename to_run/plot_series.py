@@ -609,12 +609,12 @@ for point in fseries:
 
     print(point)
 
-    os.makedirs(f'/home/bcabral/mestrado/fig/spec_03', exist_ok=True)
+    os.makedirs(f'/home/bcabral/mestrado/fig/spec_04', exist_ok=True)
 
     specs_amp.spec_anal(np.asarray(fseries[point]['ssh']),
-              f'/home/bcabral/mestrado/fig/spec_03/{point}_filt.png', False)
+              f'/home/bcabral/mestrado/fig/spec_04/{point}_filt.png', False)
     specs_amp.spec_anal(np.asarray(series[point]['ssh']),
-              f'/home/bcabral/mestrado/fig/spec_03/{point}_brute.png', True)
+              f'/home/bcabral/mestrado/fig/spec_04/{point}_brute.png', True)
     spaos = {}
     # tirando pontos dentro de estuario ou com series esquisitas
 
@@ -644,9 +644,9 @@ for point in fseries:
 
             # agora basta fazer os plots
             print('pegnado stats')
-            get_reanalisys_stats(data['ssh'], filtered_reanal_common.values * 100, point, model, '/home/bcabral/mestrado/fig/comp_series3/')
+            get_reanalisys_stats(data['ssh'], filtered_reanal_common.values * 100, point, model, '/home/bcabral/mestrado/fig/comp_series4/')
             get_skill.run_all(data=data['ssh'], model=filtered_reanal_common.values*100,
-                              path=f'/home/bcabral/mestrado/fig/comp_series3/{point}/stats/{model}')
+                              path=f'/home/bcabral/mestrado/fig/comp_series4/{point}/stats/{model}')
 
 
 
@@ -655,7 +655,7 @@ for point in fseries:
                         (point_info[model][0], point_info[model][1]), point, model)
             
             specs_amp.double_spec_anal(np.asarray(series[point]['ssh']), np.asarray(filtered_reanal_common)*100,
-                                       f'/home/bcabral/mestrado/fig/comp_series3/{point}/spec_{model}',
+                                       f'/home/bcabral/mestrado/fig/comp_series4/{point}/spec_{model}',
                                        point, model)
 
 
