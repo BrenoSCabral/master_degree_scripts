@@ -45,7 +45,7 @@ traduc = {
     'Salvador': 'Salvador',
     'TIPLAM': 'TIPLAM',
     'PORTO DE MUCURIPE': "Mucuripe's Port",
-    'NOVA DEL DA CAP DOS PORTOS EM ITAJAÍ' : "Delecagy of Itajaí's Ports",
+    'NOVA DEL DA CAP DOS PORTOS EM ITAJAÍ' : "Delegacy of Itajaí's Ports",
     'Fortaleza': 'Fortaleza',
     'Ubatuba_gloss' : 'Ubatuba',
     'TEPORTI' : 'TEPORTI',
@@ -74,7 +74,7 @@ for place in places:
     predictions['GOFS'] = predictions.pop('HYCOM')
     fig = taylor_plot(observations, predictions, true_label ='Data', title=f"{traduc[place]}",
                       show=False)
-    fig.savefig(f'/Users/breno/mestrado/new_taylor_plots/{place}.png', dpi=200)
+    fig.savefig(f'/Users/breno/mestrado/new_taylor_plots/{traduc[place]}.png', dpi=200)
     # fig.savefig(f'/Users/breno/Documents/Mestrado/resultados/2012/figs/taylor/{point[:-4]}.png')
 
 
