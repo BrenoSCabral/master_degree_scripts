@@ -268,19 +268,36 @@ abrolhos_poly = plt.Polygon(
 )
 ax.add_patch(abrolhos_poly)
 
-# Linha da Cadeia Vitória-Trindade
-vt_line = plt.Line2D(
-    [x[0] for x in vitoria_trindade_coords],
-    [x[1] for x in vitoria_trindade_coords],
-    color='darkorange',
-    linewidth=2,
-    zorder=2,
-    linestyle='--',
-    marker='o',
-    markersize=5,
+# # Linha da Cadeia Vitória-Trindade
+# vt_line = plt.Line2D(
+#     [x[0] for x in vitoria_trindade_coords],
+#     [x[1] for x in vitoria_trindade_coords],
+#     color='darkorange',
+#     linewidth=2,
+#     zorder=2,
+#     linestyle='--',
+#     marker='o',
+#     markersize=5,
+#     transform=ccrs.PlateCarree()
+# )
+# ax.add_line(vt_line)
+
+
+vitoria_trindade_coords_poly = [
+    (-39.81, -19.59), (-39.43, -19.71), (-37.75, -19.64),
+    (-33, -20.1), (-33, -21.1), (-37.95, -21.12), (-40.34, -20.54),  (-39.81, -19.59)
+]
+
+vitoria_trindade_poly = plt.Polygon(
+    vitoria_trindade_coords_poly,
+    closed=True,
+    edgecolor='darkorange',
+    facecolor='darkorange',
+    zorder=1,
+    alpha=0.3,
     transform=ccrs.PlateCarree()
 )
-ax.add_line(vt_line)
+ax.add_patch(vitoria_trindade_poly)
 
 # ===========================================
 # ANOTAÇÕES E LABELS
@@ -388,5 +405,6 @@ plt.subplots_adjust(bottom=0.2)  # Ajusta o espaço abaixo do gráfico para acom
 
 
 # Salvando a figura
-plt.savefig('/Users/breno/mestrado/points_analysis_features.png', dpi=300)
+# plt.savefig('/Users/breno/mestrado/points_analysis_features.png', dpi=300)
+plt.savefig('/Users/breno/mestrado/points_analysis_features_rev.png', dpi=300)
 # plt.show()
