@@ -222,6 +222,8 @@ def collect_ssh_data(pts, di, df, model):
 pts = get_points ()
 model = 'BRAN'
 
+## alterar aqui pra fazer um hovmoller medio
+
 for year in range(1995, 2024):
     di = datetime.datetime(year,1,1)
     df = datetime.datetime(year,12,31)
@@ -238,13 +240,453 @@ for year in range(1995, 2024):
     ph.plot_hovmoller(hovmoller_data, model=model, fig_folder=fig_folder)
     # ph.plot_hovmoller_u20(hovmoller_data[hovmoller_data.index < -20], model=model, fig_folder=fig_folder)
     #ph.plot_hovmoller_o20(hovmoller_data[hovmoller_data.index >= -20], model=model, fig_folder=fig_folder)
+##############
+##############
+##############
+#######
+#######
+#######
+#######
+#######
+#######
+def compute_psd(ts, fs=1/1):  # fs = 1/day
+    f, psd = signal.welch(ts, fs=fs, nperseg=365)  # 1-year segments
+    periods = 1 / f  # Convert frequency to period (days)
+    return periods, psd
 
+# Compute PSD for all latitudes
+periods_list, psd_data = [], {}
+latitudes = data.index
+
+for lat in latitudes:
+    periods, psd = compute_psd(np.asarray(data.loc[lat]))
+    psd_data[lat] = psd
+# periods = periods[(periods >= 3) & (periods <= 30)]  # Filter to 5-30 days
+
+# Plot
+fig, ax = plt.subplots(figsize=(8, 4))
+cmap = plt.cm.viridis
+for i, lat in enumerate(latitudes):
+    psd = psd_data[lat]# [(periods >= 3) & (periods <= 30)]
+    ax.plot(periods, psd, label=lat, color=cmap(i/len(latitudes)))
+
+ax.set_xlabel('Period (days)')
+ax.set_ylabel('Spectral Power [cm²/cph]')
+ax.set_xlim(3, 30)
+ax.legend()
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.show()
+
+
+
+########
+latitudes = data.index
+
+def compute_psd_matrix(ssh_data, fs=1/1):
+    periods_list, psd_matrix = [], []
+    for lat in latitudes:
+        f, psd = signal.welch(ssh_data.loc[lat], fs=fs, nperseg=365)
+        periods = 1 / f  # Convert frequency to period (days)
+        psd_matrix.append(psd)
+        periods_list = periods  # All periods are the same
+    # Filter periods to 5-30 days
+    period_mask = (periods_list >= 3) & (periods_list <= 30)
+    psd_matrix = np.array(psd_matrix)[:, period_mask]
+    periods = periods_list[period_mask]
+    return periods, psd_matrix
+
+periods, psd_matrix = compute_psd_matrix(data)
+
+
+fig, ax = plt.subplots(figsize=(10, 6))
+
+# Convert latitudes to numerical values (e.g., [-10, -15, ...])
+lat_values = latitudes
+
+# Create a grid for pcolormesh
+X, Y = np.meshgrid(periods, lat_values)
+
+# Plot heatmap
+pc = ax.contour(X, Y, psd_matrix, shading='auto', cmap='viridis')
+fig.colorbar(pc, ax=ax, label='Spectral Power [cm²/cph]')
+
+ax.set_xlabel('Period (days)')
+ax.set_ylabel('Latitude')
+ax.set_title('Spectral Power')
+plt.show()
+
+
+####
+# Example pairs (replace with your actual pairs)
+pairs = [
+    (-33.0, -15.008333, 'SSA vs AB'),
+]
+
+fig, axs = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
+
+# Coherence
+ax = axs[0]
+for i, (lat1, lat2, label) in enumerate(pairs):
+    f, coh = signal.coherence(data.loc[lat1], data.loc[lat2], fs=1/1, nperseg=365)
+    periods_coh = 1 / f
+    period_mask = (periods_coh >= 5) & (periods_coh <= 30)
+    ax.plot(periods_coh[period_mask], coh[period_mask], label=label)
+ax.set_ylabel('Coherence Coefficient')
+ax.legend()
+
+# Lag
+ax = axs[1]
+for i, (lat1, lat2, label) in enumerate(pairs):
+    f, coh, phase = signal.coherence(data.loc[lat1], data.loc[lat2], fs=1/1, nperseg=365, return_phase=True)
+    lag = (phase / (2 * np.pi)) * (1 / f)  # Convert phase to lag (days)
+    periods_lag = 1 / f
+    period_mask = (periods_lag >= 5) & (periods_lag <= 30)
+    ax.plot(periods_lag[period_mask], lag[period_mask], label=label)
+ax.set_ylabel('Lag (days)')
+ax.legend()
+
+# Finalize
+axs[-1].set_xlabel('Period (days)')
+for ax in axs:
+    ax.grid(True, linestyle='--', alpha=0.7)
+    ax.set_xlim(5, 30)
+plt.tight_layout()
+
+###################
+
+# Função modificada para Spectral Power
+def compute_psd_matrix(ssh_data, fs=1/1):
+    periods_list, psd_matrix = [], []
+    for lat in latitudes:
+        f, psd = signal.welch(ssh_data.loc[lat], fs=fs, nperseg=365)
+        periods = 1 / f  # Converter frequência para período (dias)
+        psd_matrix.append(psd)
+        periods_list = periods
+    # Filtrar períodos e converter para matriz 2D
+    period_mask = (periods_list >= 1) & (periods_list <= 40)
+    psd_matrix = np.array(psd_matrix)[:, period_mask]
+    periods = periods_list[period_mask]
+    return periods, psd_matrix
+
+# Plot com escala logarítmica
+periods, psd_matrix = compute_psd_matrix(data)
+lat_values = latitudes  # Converter para valores numéricos
+
+X, Y = np.meshgrid(periods, lat_values)
+
+fig, ax = plt.subplots(figsize=(10, 6))
+levels =np.array([.1, 1, 20,  40,  60,  80,  100, 150, 200, 250, 300, 400, 500, 600, 700, 800, 900,
+         1e3, 1.5e3, 2e3])
+# Usar escala logarítmica no eixo X
+
+# BDmatrixq = interp2(X,Y,psd_matrix,xq,yq,'cubic')
+
+
+pc = ax.contourf(X, Y, psd_matrix,interpolation = 'linear', cmap='inferno_r', levels=levels,
+                 norm=matplotlib.colors.LogNorm(vmin=.1, vmax=2e3))  # Ajustar vmin/vmax conforme seus dados)  # Ajustar vmin/vmax conforme seus dados
+
+# ax.set_xscale('log')  # Escala log no eixo X
+ax.set_xticks([3, 12, 16, 30])
+ax.set_xlim([3,30])
+# ax.get_xaxis().set_major_formatter(ScalarFormatter())  # Forçar labels não-científicas
+plt.colorbar(pc, ax=ax, label='Spectral Power [cm²/cph]')
+ax.set_xlabel('Period (days)')
+ax.set_ylabel('Latitude')
+plt.show()
+
+# OK, AGORA FICOU MUITO DECENTE!
+
+######crosspecs
+latitudes = data.index
+
+
+def coherence_crosspecs(central_lat):
+
+    coherence_matrix = np.zeros((37, 290))
+    lag_matrix = np.zeros_like(coherence_matrix)
+
+    xx1=np.asarray(data.loc[central_lat])
+    for i, lat in enumerate(latitudes):
+        xx2=np.asarray(data.loc[lat])
+        ppp=len(xx1)
+        dt=24 #diario
+        win=2
+        smo=999
+        ci=99
+        h1,h2,fff,coef,conf,fase=crosspecs.crospecs(xx1, xx2, ppp, dt, win, smo, ci)
+
+        coef = np.where(coef>conf, coef, np.nan)
+        fase = np.where(coef>conf, fase, np.nan)
+
+        periods = 1./fff/24
+
+
+        coherence_matrix[i,:] = coef
+        lag_matrix[i,:] = (fase/(2*np.pi) * (1/fff/24))
+
+    return periods, coherence_matrix, lag_matrix
+
+
+p2, c2, l2 = coherence_crosspecs( -25.00303)
+
+central_lat = -25
+
+# Criar grids para pcolormesh
+X, Y = np.meshgrid(p2, latitudes)
+
+lvlcoh = [0, .1, .2, .3, .4, .5,  .6, .7,  .8, .9,  1]
+
+# Plotar Coerência
+fig, ax = plt.subplots(figsize=(10, 4))
+pc = ax.contourf(X, Y, c2, shading='auto', cmap='viridis', vmin=0, vmax=1, levels=lvlcoh)
+fig.colorbar(pc, ax=ax, label='Coherence Coefficient')
+# ax.set_xscale('log')
+ax.set_xticks([5, 10, 20, 30])
+ax.set_xlim([3,30])
+ax.get_xaxis().set_major_formatter(plt.ScalarFormatter())
+ax.set_xlabel('Period (days)')
+ax.axhline(central_lat, color='black', linestyle='--', linewidth=2)
+ax.set_ylabel(f'Latitude (vs {central_lat})')
+ax.set_title('Coerência')
+plt.show()
+
+
+X, Y = np.meshgrid(p2, latitudes)
+
+lvllag = np.arange(-10, 15.5, .5)
+
+lvlcontour = [-2, -.5, .5, 2, 4, 6, 8, 10, 12, 14, 16]
+
+# Plotar Coerência
+fig, ax = plt.subplots(figsize=(10, 4))
+pc = ax.contourf(X, Y, l2, shading='auto', cmap='viridis', levels = lvllag)
+# contours = ax.contour(X, Y, l2, levels=lvlcontour, colors='black', linewidths=.5)
+
+# ax.clabel(contours, inline=True,fontsize=10)
+
+fig.colorbar(pc, ax=ax, label='Lag Coefficient')
+# ax.set_xscale('log')
+ax.set_xticks([5, 10, 20, 30])
+ax.set_xlim([3,30])
+ax.get_xaxis().set_major_formatter(plt.ScalarFormatter())
+ax.set_xlabel('Period (days)')
+ax.axhline(central_lat, color='black', linestyle='--', linewidth=2)
+ax.set_ylabel(f'Latitude (vs {central_lat})')
+ax.set_title('Lag')
+plt.show()
+
+
+
+
+
+
+
+
+
+# combinando os 3
+
+for central_lat in latitudes:
+
+
+    p2, c2, l2 = coherence_crosspecs( central_lat)
+
+    periods, psd_matrix = compute_psd_matrix(data)
+
+
+
+    # Criar grids para pcolormesh
+
+    fig, ax = plt.subplots(1,3, figsize=(18,15))
+
+    ################ -> espectroX
+
+
+    lvl_spec = np.array([.1, 1, 20,  40,  60,  80,  100, 150, 200, 250, 300, 400, 500, 600, 700, 800, 900,
+            1e3, 1.5e3, 2e3])
+
+    X, Y = np.meshgrid(periods, latitudes)
+
+
+    spc = ax[0].contourf(X, Y, psd_matrix,interpolation = 'linear', cmap='inferno_r', levels=lvl_spec,
+                    norm=matplotlib.colors.LogNorm(vmin=.1, vmax=2e3))  # Ajustar vmin/vmax conforme seus dados)  # Ajustar vmin/vmax conforme seus dados
+
+
+    # Custom formatter para 10¹, 10²
+    def exp_formatter(x, pos):
+        exponent = int(np.log10(x))
+        return r'$10^{%d}$' % exponent
+
+    cbar_spec = plt.colorbar(spc, ax=ax[0], location='top', pad=0.02)
+    cbar_spec.ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(exp_formatter))
+    cbar_spec.ax.xaxis.set_ticks([1e-1, 1e1, 1e2, 1e3])  # Valores exatos para corresponder aos exponents
+    cbar_spec.ax.xaxis.set_ticks_position('bottom')
+
+
+    # ax.set_xscale('log')  # Escala log no eixo X
+    ax[0].set_xticks([3, 12, 16, 30])
+    ax[0].set_xlim([3,30])
+    # ax.get_xaxis().set_major_formatter(ScalarFormatter())  # Forçar labels não-científicas
+    # plt.colorbar(spc, ax=ax, label='Spectral Power [cm²/cph]')
+    ax[0].set_xlabel('Period (days)')
+    ax[0].set_title('Spectral Power (cm²/cph)', pad=42)
+    # ax[1].set_ylabel('Latitude')
+
+
+    ################## ->coerencia
+
+    X, Y = np.meshgrid(p2, latitudes)
+
+
+    lvlcoh = [0, .1, .2, .3, .4, .5,  .6, .7,  .8, .9,  1]
+
+    coc = ax[1].contourf(X, Y, c2, shading='auto', cmap='viridis', vmin=0, vmax=1, levels=lvlcoh)
+
+    # Colorbar no topo
+    cbar_coh = plt.colorbar(coc, ax=ax[1], location='top', pad=0.02)
+    # cbar_coh.set_label('Coherence', labelpad=10)
+    # cbar_coh.ax.xaxis.set_label_position('bottom')
+    cbar_coh.ax.xaxis.set_ticks_position('bottom')
+    cbar_coh.set_ticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
+
+
+    # plt.colorbar(coc, ax=ax, label='Coherence Coefficient')
+    # ax.set_xscale('log')
+    ax[1].set_xticks([5, 10, 20, 30])
+    ax[1].set_xlim([3,30])
+    ax[1].get_xaxis().set_major_formatter(plt.ScalarFormatter())
+    ax[1].set_xlabel('Period (days)')
+    ax[1].axhline(central_lat, color='black', linestyle='--', linewidth=2)
+    ax[1].set_title('Coherence Coefficient', pad=42)
+
+
+
+    ################# - > LAG
+
+
+    lvllag = np.arange(-12, 15.5, .5)
+
+    lvlcontour = [-2, 0, 1, 2, 4, 6, 8, 10, 12, 14, 16]
+
+    col = ax[2].contourf(X, Y, l2, shading='auto', cmap='viridis', levels = lvllag)
+    contours = ax[2].contour(X, Y, l2, levels=lvlcontour, colors='black', linewidths=0.7)
+    ax[2].clabel(contours, inline=True, fontsize=12, colors = 'black',  fmt='%1.0f')
+
+    # Colorbar no topo
+    cbar_lag = plt.colorbar(col, ax=ax[2], location='top', pad=0.02)
+    # cbar_lag.set_label('Lag (days)', labelpad=10)
+    # cbar_lag.ax.xaxis.set_label_position('bottom')
+    cbar_lag.ax.xaxis.set_ticks_position('bottom')
+    cbar_lag.set_ticks(np.arange(-10, 16, 5))
+    # contours = ax.contour(X, Y, l2, levels=lvlcontour, colors='black', linewidths=.5)
+
+    # ax.clabel(contours, inline=True,fontsize=10)
+
+    # plt.colorbar(col, ax=ax, label='Lag Coefficient')
+    # ax.set_xscale('log')
+    ax[2].set_xticks([5, 10, 20, 30])
+    ax[2].set_xlim([3,30])
+    ax[2].get_xaxis().set_major_formatter(plt.ScalarFormatter())
+    ax[2].set_xlabel('Period (days)')
+    ax[2].axhline(central_lat, color='black', linestyle='--', linewidth=2)
+    ax[2].set_title('Lag', pad=42)
+
+
+    plt.tight_layout()
+    plt.savefig('/Users/breno/mestrado/triple_figure/' + str(central_lat) + '.png', dpi=300)
+
+########
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import signal
+from matplotlib.colors import LogNorm, Normalize
+
+def compute_coherence_lag_matrices(central_lat, other_lats, data, fs=1/1, nperseg=365):
+    """
+    Retorna matrizes 2D de coerência e lag para a latitude central vs outras latitudes.
+    """
+    # Definir períodos de referência (garantir consistência)
+    f_ref, _ = signal.welch(data.loc[central_lat], fs=fs, nperseg=nperseg)
+    periods = 1 / f_ref
+    period_mask = (periods >= 3) & (periods <= 40)
+    periods = periods[period_mask]
+    
+    # Inicializar matrizes
+    coherence_matrix = np.zeros((len(other_lats), len(periods)))
+    lag_matrix = np.zeros_like(coherence_matrix)
+
+    # Calcular para cada latitude
+    for i, lat in enumerate(other_lats):
+        f, Pxy = signal.csd(data.loc[central_lat], data.loc[lat], fs=fs, nperseg=nperseg)
+        Pxx = signal.welch(data.loc[central_lat], fs=fs, nperseg=nperseg)[1]
+        Pyy = signal.welch(data.loc[lat], fs=fs, nperseg=nperseg)[1]
+        coherence = np.abs(Pxy)**2 / (Pxx * Pyy)
+        phase = np.angle(Pxy)
+        lag = (phase / (2 * np.pi)) * (1/f)
+        
+        # Filtrar e armazenar
+        coherence_matrix[i, :] = coherence[period_mask]
+        lag_matrix[i, :] = lag[period_mask]
+    
+    return periods, coherence_matrix, lag_matrix
+
+
+# Definir latitude central e outras latitudes
+central_lat = -33.0
+other_lats =  [lat for lat in latitudes if lat != central_lat]
+
+# Calcular matrizes
+periods, coherence_matrix, lag_matrix = compute_coherence_lag_matrices(
+    central_lat, latitudes, data
+)
+
+# Converter latitudes para valores numéricos (y-axis)
+lat_values = latitudes
+
+# Criar grids para pcolormesh
+X, Y = np.meshgrid(periods, lat_values)
+
+# Plotar Coerência
+fig, ax = plt.subplots(figsize=(10, 4))
+pc = ax.contourf(X, Y, coherence_matrix, shading='auto', cmap='viridis', vmin=0, vmax=1)
+fig.colorbar(pc, ax=ax, label='Coherence Coefficient')
+# ax.set_xscale('log')
+ax.set_xticks([5, 10, 20, 30])
+ax.set_xlim([3,30])
+ax.get_xaxis().set_major_formatter(plt.ScalarFormatter())
+ax.set_xlabel('Period (days)')
+ax.set_ylabel(f'Latitude (vs {central_lat})')
+ax.set_title('Coerência')
+plt.show()
+
+# Plotar Lag
+fig, ax = plt.subplots(figsize=(10, 4))
+pc = ax.pcolormesh(X, Y, lag_matrix, shading='auto', cmap='coolwarm', norm=Normalize(vmin=-5, vmax=5))
+fig.colorbar(pc, ax=ax, label='Lag (days)')
+ax.set_xscale('log')
+ax.set_xticks([5, 10, 20, 30])
+ax.get_xaxis().set_major_formatter(plt.ScalarFormatter())
+ax.set_xlabel('Period (days)')
+ax.set_ylabel(f'Latitude (vs {central_lat})')
+ax.set_title('Lag de Fase')
+plt.show()
+
+##############
+##############
+##############
+#######
+#######
+#######
+#######
+#######
+#######
 
 ######
 # tentando calcular coerencia
 #####
 from scipy.signal import coherence
-pd.read_csv('/Users/breno/mestrado/hov_data.csv', index_col=0)
+
+coh_data = pd.read_csv('/Users/breno/mestrado/hov_data.csv', index_col=0)
 
 def plot_coherence(signal1, signal2, fs=1.0, title='Coerência'):
     f, Cxy = coherence(signal1, signal2, fs=fs, window='hann', nperseg=256)
@@ -255,7 +697,7 @@ def plot_coherence(signal1, signal2, fs=1.0, title='Coerência'):
     plt.title(title)
     plt.show()
 
-data = hovmoller_data.T.copy()
+data = coh_data.T.copy()
 
 # Exemplo: Calcular a coerência entre duas latitudes
 latitudes = data.columns  # Lista de latitudes
