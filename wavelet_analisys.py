@@ -33,11 +33,88 @@ for year in years:
 
 reanalisys = xr.concat(list(reanal.values()), dim="time")
 
-# latlon = pts[0]
+# # latlon = pts[0]
+
+# reanal2 = set_reanalisys_dims(xr.open_mfdataset('/Users/breno/mestrado/REANALISES_TEMP/BRAN/' + str(year)  + '/*.nc')
+#                                         , model)
+
+
+
+# from scipy.signal import periodogram
+# import matplotlib.pyplot as plt
+
+# plt.figure()
+
+# for latlon in pts:
+#     model_series = reanalisys.sel(latitude=latlon[0], longitude=latlon[1], method='nearest')
+
+#     # model_series = reanal2.sel(latitude=latlon[0], longitude=latlon[1], method='nearest')
+
+#     filtered_reanal = model_filt.filtra_reanalise(model_series)
+
+#     filt_model=filtered_reanal.values*100
+
+#     model_data = model_series['ssh'].values * 100
+
+#     # model_data_cut =  model_series.sel(time=slice('2000' , '2004'))['ssh'].values # selecionando um ano especifico
+
+#     # funcoes da wavelet
+#     # data_norm = waipy.normalize(filt_model)
+#     # data_norm = waipy.normalize(model_data[:365*2])
+#     dt = 1
+#     data_norm = waipy.normalize(model_data)
+#     frequencies, psd = periodogram(data_norm, fs=1/dt, window='hann', scaling='density')
+#     periods = 1 / frequencies
+
+#     print(psd[365:3652].sum())
+
+#     # Plot focado em 3-30 dias
+#     plt.semilogx(periods, psd, label =str(latlon[0]))
+
+# plt.xlim(3, 30)
+# plt.ylim(0, 50)
+# plt.axvline(10, linestyle='--', label='Período Esperado')
+
+# plt.xlabel('Período (dias)')
+# plt.ylabel('Densidade Espectral')
+# plt.title('Espectro de Potência')
+# plt.grid(True)
+
+# plt.legend()
+# # plt.show()
+# plt.savefig('/Users/breno/mestrado/wavelet_energy_test/energia_total')
+# fig = plt.figure(figsize=(12,6))
+# plt.plot(filt_model, label = '-30')
+# plt.plot(filt_model10, label = '-10')
+# plt.legend()
+# plt.title('Séries Filtradas BRAN 1993')
+# plt.savefig('/Users/breno/mestrado/wavelet_intervals_test/test/filts.png')
+
+# plt.close()
+# fig = plt.figure(figsize=(12,6))
+
+# plt.plot(data_norm, label = '-30')
+# plt.plot(data_norm10, label='-10')
+# plt.legend()
+# plt.title('Séries normalizadas BRAN 1993')
+# plt.savefig('/Users/breno/mestrado/wavelet_intervals_test/test/norms.png')
+
+
+# plt.close()
+# fig = plt.figure(figsize=(12,6))
+
+# plt.plot(data_norm * filt_model.max(), label = '-30')
+# plt.plot(data_norm10 * filt_model10.max(), label='-10')
+# plt.legend()
+# plt.title('Séries normalizadas BRAN 1993')
+# plt.savefig('/Users/breno/mestrado/wavelet_intervals_test/test/norms_weight.png')
 
 for latlon in pts:
     print(latlon[0])
     model_series = reanalisys.sel(latitude=latlon[0], longitude=latlon[1], method='nearest')
+
+    # model_series = reanal2.sel(latitude=latlon[0], longitude=latlon[1], method='nearest')
+
     filtered_reanal = model_filt.filtra_reanalise(model_series)
 
     filt_model=filtered_reanal.values*100
@@ -48,7 +125,7 @@ for latlon in pts:
     # model_data_cut =  model_series.sel(time=slice('2000' , '2004'))['ssh'].values # selecionando um ano especifico
 
     # funcoes da wavelet
-    # data_norm = waipy.normalize(model_nfilt)
+    # data_norm = waipy.normalize(filt_model)
     # data_norm = waipy.normalize(model_data[:365*2])
     data_norm = waipy.normalize(model_data)
 
@@ -56,23 +133,22 @@ for latlon in pts:
     n1 = len(data_norm)
     dt =  1 # dado diario -> botar 1
     pad = 1 # bota 0 no inicio e final da serie
-    dj = .5 # 0.25 isto faz 4 sub-oitavas por oitava -> como performa a wavelet
+    dj = .25 # 0.25 isto faz 4 sub-oitavas por oitava -> como performa a wavelet
     s0 = 2*dt # escala inicial do dominio de periodo
-    j1 =  7/dj # int(np.floor((np.log10(n1*dt/s0))/np.log10(2)/dj))   # isso diz fazer 7 potências de dois com dj sub-oitavas cada -> ate onde vai a ondaleta
+    j1 =  64 # int(np.floor((np.log10(n1*dt/s0))/np.log10(2)/dj))   # isso diz fazer 7 potências de dois com dj sub-oitavas cada -> ate onde vai a ondaleta
                                                                     # no meu caso essa variavel nao ta importando tanto
 
     lag1 =  np.corrcoef(data_norm[0:-1], data_norm[1:])[0,1] # essa e a variavel que mais impacta na coerencia do sinal.
     param = 6
     mother = 'Morlet'
-    dtmin = 1/256# 0.25/8
+    # dtmin = 1/256# 0.25/8
+    dtmin = .5
     # data_norm = waipy.normalize(model)
     # alpha = np.corrcoef(data_norm[0:-1], data_norm[1:])[0,1]; 
     # print("Lag-1 autocorrelation = {:4.2f}".format(alpha))
-
-
     result = waipy.cwt(data=data_norm, 
                     dt=dt, 
-                    pad=pad, 
+                    pad=pad,
                     dj=dj,
                     s0=s0,
                     j1=j1,
@@ -80,8 +156,104 @@ for latlon in pts:
                     param=param,
                     name='BRAN',
                     mother=mother)
+
+
+    # #### DEEPSEEK
+    # dj = 0.1              # Aumentar a resolução em escala (0.1 ao invés de 0.2)
+    # s0 = 2 * dt           # Escala inicial = 2 dias (para descartar variações muito curtas)
+    # j1 = 10 / dj          # Limitar a escala máxima para ~30 dias (ver cálculo abaixo)
+    # periodo_dias = s0 * 1.447  # Fator de Fourier para Morlet ω₀=6
+
+    # periodo_maximo = 30  # dias
+    # escala_maxima = periodo_maximo / 1.447
+    # j1 = np.log2(escala_maxima/s0) / dj  # ≈ (log2(20.7/2)) / 0.1 ≈ 6.4 / 0.1 ≈ 64
+
+    # n1 = len(data_norm)
+    # dt = 1                # Dado diário
+    # pad = 1               
+    # dj = 0.1              # + resolução nas escalas (sub-oitavas)
+    # s0 = 2 * dt           # Ignorar escalas < 2 dias
+    # j1 = 64               # Escala máxima ~20.7*1.447 ≈ 30 dias
+    # lag1 = 0.72           # Valor típico para dados oceanográficos (ajuste conforme sua série!)
+    # param = 6             # Morlet ω₀=6
+    # mother = 'Morlet'
+
+    # result = waipy.cwt(data=data_norm, 
+    #                 dt=dt, 
+    #                 pad=pad,
+    #                 dj=dj,
+    #                 s0=s0,
+    #                 j1=j1,
+    #                 lag1=lag1,
+    #                 param=param,
+    #                 name='BRAN',
+    #                 mother=mother)
+
+
+    # ######
+
+for latlon in [pts[0], pts[-1]]:
+    print(latlon[0])
+    model_series = reanalisys.sel(latitude=latlon[0], longitude=latlon[1], method='nearest')
+
+    # model_series = reanal2.sel(latitude=latlon[0], longitude=latlon[1], method='nearest')
+
+    filtered_reanal = model_filt.filtra_reanalise(model_series)
+
+    filt_model=filtered_reanal.values*100
+
+    model_data = model_series['ssh'].values * 100
+    data_norm = model_data
+
+    # model_nfilt = model_series['ssh'].values
+
+    # model_data_cut =  model_series.sel(time=slice('2000' , '2004'))['ssh'].values # selecionando um ano especifico
+
+    # funcoes da wavelet
+    # data_norm = waipy.normalize(filt_model)
+    # data_norm = waipy.normalize(model_data[:365*2])
+#     data_norm = waipy.normalize(model_data)
+
+
+    # # TODO -> Ajustar dt e j1, testar diferentes lags
+    # n1 = len(data_norm)
+    # dt =  1 # dado diario -> botar 1
+    # pad = 1 # bota 0 no inicio e final da serie
+    # dj = .25 # 0.25 isto faz 4 sub-oitavas por oitava -> como performa a wavelet
+    # s0 = 2*dt # escala inicial do dominio de periodo
+    # j1 =  64 # int(np.floor((np.log10(n1*dt/s0))/np.log10(2)/dj))   # isso diz fazer 7 potências de dois com dj sub-oitavas cada -> ate onde vai a ondaleta
+    #                                                                 # no meu caso essa variavel nao ta importando tanto
+
+    # lag1 =  np.corrcoef(data_norm[0:-1], data_norm[1:])[0,1] # essa e a variavel que mais impacta na coerencia do sinal.
+    # param = 6
+    # mother = 'Morlet'
+    # dtmin = 1/256# 0.25/8
+
+
+    # result = waipy.cwt(data=data_norm, 
+    #                 dt=dt, 
+    #                 pad=pad,
+    #                 dj=.01,
+    #                 s0=s0,
+    #                 j1=j1,
+    #                 lag1=lag1,
+    #                 param=param,
+    #                 name='BRAN',
+    #                 mother=mother)
+    # label = 'BRAN'
+
+    # # aqui embaixo ta plotando a serie filtrada em cima
+    # t0 = np.datetime64(f'{1995}-01-01')
+    # tf = np.datetime64(f'{1995}-12-31')
     time = np.asarray(model_series.time.time)
-    cmap_levels = [0.0078125, 0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0] # , 64.0# , 128.0, 256.0]
+    # # cmap_levels = [0.0078125, 0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0] # , 64.0# , 128.0, 256.0]
+    # cmap_levels = [np.exp2(.1)]
+    # waipy.wavelet_plot(label, time, data_norm, dtmin, result,  custom_data=filt_model, ylabel_data='ASM Filtrada (cm)', extra_plot=[False],             
+    #            xmin=t0, xmax=tf, ymin=np.log2(3), ymax=np.log2(30), cmap_levels=cmap_levels)
+    
+    # plt.savefig(f'/Users/breno/mestrado/wavelet_energy_test/brute_{latlon[0]}.png')
+    # plt.close('all')
+    # plt.show()
 
     # Plot da ondaleta pra cada ano:
     anos = range(1993, 2024)
@@ -99,10 +271,11 @@ for latlon in pts:
 
 
         waipy.wavelet_plot(label, time, data_norm, dtmin, result,  custom_data=filt_model, ylabel_data='ASM Filtrada (cm)', extra_plot=[False],             
-                    xmin=t0, xmax=tf, ymin=np.log2(3), ymax=np.log2(30), spectrum_max=10, yticks=ticks,)
+                   xmin=t0, xmax=tf, ymin=np.log2(3), ymax=np.log2(30), spectrum_max=10, yticks=ticks)
+        # plt.savefig('/Users/breno/mestrado/wavelet_intervals_test/test/0aaaa.png')
         # plt.savefig(f'/Users/breno/mestrado/ondaleta/{latlon[0]}/{ano}.png')
-        os.makedirs(f'/Users/breno/mestrado/wavelet_intervals_test/{latlon[0]}',exist_ok=True)
-        plt.savefig(f'/Users/breno/mestrado/wavelet_intervals_test/{latlon[0]}/{ano}.png')
+        # os.makedirs(f'/Users/breno/mestrado/wavelet_intervals_test/{latlon[0]}',exist_ok=True)
+        # plt.savefig(f'/Users/breno/mestrado/wavelet_intervals_test/{latlon[0]}/{ano}.png')
         plt.close('all')
 
     # # isso aqui faz o plot com a energia integrada
@@ -150,8 +323,13 @@ for latlon in pts:
         return energia_integrada
 
 
-    intervals = ([3, 9,18,30], [3, 5,20,30], [3, 7,20,30],
-                 [3, 12,22,30], [3, 7,12,30], [3, 5,15,30])
+    # intervals = ([3, 9,18,30], [3, 5,20,30], [3, 7,20,30],
+    #              [3, 12,22,30], [3, 7,12,30], [3, 5,15,30])
+    
+    # intervals = [[3,10,15,34] ]
+
+    intervals = [[3, 12, 16, 30]]
+
     for interval in intervals:
         plt.close('all')
         df_energy_raw = pd.DataFrame(index=time)
@@ -626,6 +804,74 @@ Bandas adaptadas:
 8 a 16
 16 a 30
 '''
+
+
+
+import numpy as np
+import pywt
+from scipy.signal import periodogram
+
+
+
+
+# 1. Generate synthetic test signal
+dt = 1  # Daily data
+t = time
+freq = 1/12  # 10-day period
+signal = data_norm
+
+# 2. Compute Fourier spectrum
+f, fourier_psd = periodogram(signal, fs=1/dt, scaling='spectrum')
+
+# 3. Compute wavelet spectrum using waipy
+result = waipy.cwt(data=signal, dt=dt, pad=1, dj=0.25, s0=2*dt, 
+                  j1=7/0.25, lag1=0.72, param=6, mother='Morlet', name= 'test')
+
+# 4. Calculate wavelet power spectrum (critical step!)
+scales = result['scale']
+# Proper normalization: power = (|coeff|^2 * dt) / scale
+wavelet_power = (np.abs(result['wave'])**2 * dt / scales[:])
+
+# Global wavelet spectrum (average over time)
+global_wavelet = np.mean(wavelet_power, axis=1)
+
+# 5. Match frequencies between methods
+wavelet_freq = 1/(result['fourier_factor'] * scales)
+
+# 6. Plot comparison
+plt.figure(figsize=(10, 6))
+plt.semilogy(f, fourier_psd, label='Fourier PSD')
+plt.semilogy(wavelet_freq, global_wavelet, 'ro--', label='Wavelet Power')
+
+# Formatting
+plt.xlim(1/30, 1/2)  # 2 to 30 days
+plt.xticks(1/np.array([30, 20, 10, 5]), ['30', '20', '10', '5'])
+plt.xlabel('Period (days)')
+plt.ylabel('Power')
+plt.legend()
+plt.grid(True, which='both', linestyle='--')
+plt.title('Power Spectrum Comparison: Fourier vs Wavelet')
+plt.show()
+
+
+
+# Generate sample data
+# t = np.linspace(0, 1, 1000)
+# data = np.sin(2 * np.pi * 10 * t) + 0.5 * np.random.randn(1000)
+
+t = time
+data = data_norm
+# Compute Fourier PSD
+f_fourier, psd = periodogram(data, fs=1000)
+
+# Compute Wavelet Power
+scales = pywt.central_frequency('morl') / (np.array([5, 10, 20]) * 1/1000)
+coefficients, freqs = pywt.cwt(data, scales, 'morl', sampling_period=1/1000)
+wavelet_power = np.mean(np.abs(coefficients) ** 2 / scales[:, None], axis=1)
+
+# Compare
+print("Fourier PSD at 10 Hz:", psd[f_fourier == 10][0])
+print("Wavelet Power at ~10 Hz:", wavelet_power[1])
 
 
 def conta_eventos():
